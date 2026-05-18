@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.models.role import Role
 from app.models.user import User
 from app.schemas.user import UserCreate, UserUpdate
+from app.security.password import hash_password
 from app.services._utils import require_unique, schema_to_dict, update_model
 
 
@@ -40,7 +41,7 @@ def create_user(db: Session, user_in: UserCreate):
     data = schema_to_dict(user_in, exclude_unset=False)
     role_ids = data.pop("role_ids", None)
     require_unique(get_user_by_email(db, data["email"]), "Un utilisateur avec cet email existe deja")
-    # TODO: brancher ici le hashage du mot de passe quand le projet fournira un helper security/auth.
+    data["mot_de_passe"] = hash_password(data["mot_de_passe"])
     user = User(**data)
     if role_ids:
         user.roles = db.query(Role).filter(Role.id.in_(role_ids)).all()
@@ -65,8 +66,7 @@ def update_user(db: Session, user_id: int, user_in: UserUpdate):
         if existing is not None and existing.id != user_id:
             raise ValueError("Un utilisateur avec cet email existe deja")
     if "mot_de_passe" in data:
-        # TODO: remplacer par un hash de mot de passe avant activation de l'authentification.
-        pass
+        data["mot_de_passe"] = hash_password(data["mot_de_passe"])
     for field, value in data.items():
         setattr(user, field, value)
     if role_ids is not None:

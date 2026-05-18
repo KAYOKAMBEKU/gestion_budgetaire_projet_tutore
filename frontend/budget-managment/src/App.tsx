@@ -1,9 +1,12 @@
-function App(){
+import { BrowserRouter } from "react-router-dom";
+import { AppRoutes } from "./features/administration/pages/AdministrationPage";
+
+function App() {
   return (
-    <div className="text-stone-800">
-      Hello world
-    </div>
-  )
+    <BrowserRouter>
+      <AppRoutes />
+    </BrowserRouter>
+  );
 }
 
-export default App
+export default App;

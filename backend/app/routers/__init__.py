@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 
+from app.routers import auth
 from app.routers import actions_correctives
 from app.routers import analyses_ecarts
 from app.routers import budgets
@@ -19,6 +20,7 @@ from app.routers import validations_budgetaires
 
 api_router = APIRouter()
 
+api_router.include_router(auth.router)
 api_router.include_router(users.router)
 api_router.include_router(roles.router)
 api_router.include_router(permissions.router)
