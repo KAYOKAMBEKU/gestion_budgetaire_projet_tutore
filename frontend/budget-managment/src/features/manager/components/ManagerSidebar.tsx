@@ -3,7 +3,7 @@ import { useAuth } from "../../../context/AuthContext";
 
 export function ManagerSidebar() {
   const navigate = useNavigate();
-  const { currentUser, logout } = useAuth();
+  const { currentUser, logout, isBudgetManager } = useAuth();
 
   function handleLogout() {
     logout();
@@ -17,16 +17,29 @@ export function ManagerSidebar() {
         <h1 className="mt-1 text-lg font-bold">Budgets departementaux</h1>
       </div>
       <nav className="mt-5 grid gap-2">
+        {isBudgetManager ? (
+          <NavLink
+            className={({ isActive }) =>
+              `rounded-lg px-4 py-3 text-left transition ${
+                isActive ? "bg-slate-950 text-white shadow-sm" : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+              }`
+            }
+            to="/manager/budgets/create"
+          >
+            <span className="block text-sm font-semibold">Creation du budget</span>
+            <span className="mt-0.5 block text-xs text-inherit opacity-75">Soumettre pour validation</span>
+          </NavLink>
+        ) : null}
         <NavLink
           className={({ isActive }) =>
             `rounded-lg px-4 py-3 text-left transition ${
               isActive ? "bg-slate-950 text-white shadow-sm" : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
             }`
           }
-          to="/manager/budgets/create"
+          to="/manager/projects"
         >
-          <span className="block text-sm font-semibold">Creation du budget</span>
-          <span className="mt-0.5 block text-xs text-inherit opacity-75">Soumettre pour validation</span>
+          <span className="block text-sm font-semibold">Supervision des projets</span>
+          <span className="mt-0.5 block text-xs text-inherit opacity-75">Valider et superviser</span>
         </NavLink>
       </nav>
       <div className="mt-6 rounded-lg border border-slate-200 bg-slate-50 p-4">

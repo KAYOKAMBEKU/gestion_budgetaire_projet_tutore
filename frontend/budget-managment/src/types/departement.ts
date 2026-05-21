@@ -13,6 +13,7 @@ export interface DepartementCreate {
   description?: string;
   responsable?: string;
   statut?: DepartementStatus;
+  gestionnaire_id?: number;
 }
 
 export interface DepartementUpdate {
@@ -20,4 +21,5 @@ export interface DepartementUpdate {
   description?: string;
   responsable?: string;
   statut?: DepartementStatus;
+  gestionnaire_id?: number;
 }

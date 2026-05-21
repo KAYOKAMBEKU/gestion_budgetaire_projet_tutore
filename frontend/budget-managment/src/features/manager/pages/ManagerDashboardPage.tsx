@@ -16,7 +16,7 @@ function AccessMessage({ title, message }: { title: string; message: string }) {
 }
 
 export function ManagerDashboardPage() {
-  const { authLoading, currentUser, isAuthenticated, isManager } = useAuth();
+  const { authLoading, currentUser, isAuthenticated, isManager, isBudgetManager } = useAuth();
   const managerBudgetsQuery = useManagerBudgets(currentUser?.departement_id);
 
   if (authLoading) {
@@ -39,10 +39,12 @@ export function ManagerDashboardPage() {
             <h1 className="mt-2 text-3xl font-bold text-slate-950">Bienvenue, {currentUser?.prenom ?? currentUser?.nom}</h1>
             <p className="mt-2 text-sm text-slate-600">Vous pouvez creer un budget pour votre departement et le soumettre pour validation.</p>
           </section>
-          <Link className="rounded-lg border border-slate-200 bg-white p-6 text-left shadow-sm transition hover:border-emerald-300 hover:shadow-md" to="/manager/budgets/create">
-            <p className="text-lg font-bold text-slate-950">Creer un budget</p>
-            <p className="mt-2 text-sm text-slate-600">Saisir les informations du budget, ajouter les lignes budgetaires, puis soumettre a l'administrateur.</p>
-          </Link>
+          {isBudgetManager ? (
+            <Link className="rounded-lg border border-slate-200 bg-white p-6 text-left shadow-sm transition hover:border-emerald-300 hover:shadow-md" to="/manager/budgets/create">
+              <p className="text-lg font-bold text-slate-950">Creer un budget</p>
+              <p className="mt-2 text-sm text-slate-600">Saisir les informations du budget, ajouter les lignes budgetaires, puis soumettre a l'administrateur.</p>
+            </Link>
+          ) : null}
           <ManagerBudgetsStatus budgets={managerBudgetsQuery.data ?? []} loading={managerBudgetsQuery.isLoading} />
         </div>
       </div>

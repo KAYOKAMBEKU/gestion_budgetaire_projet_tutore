@@ -28,7 +28,7 @@ function ErrorMessage({ message }: { message: string }) {
 export function CreateBudgetPage() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const { authLoading, currentUser, isAuthenticated, isManager } = useAuth();
+  const { authLoading, currentUser, isAuthenticated, isManager, isBudgetManager } = useAuth();
   const [budgetForm, setBudgetForm] = useState<Pick<BudgetCreate, "reference" | "libelle" | "description">>({
     reference: "",
     libelle: "",
@@ -125,8 +125,8 @@ export function CreateBudgetPage() {
           </header>
 
           {!isAuthenticated ? <ErrorMessage message="Vous devez etre connecte pour acceder a cette page." /> : null}
-          {isAuthenticated && !isManager ? <ErrorMessage message="Acces refuse. Cette page est reservee au gestionnaire budgetaire." /> : null}
-          {isManager && !departementId ? <BlockingMessage message="Aucun departement n'est associe a votre compte. Contactez l'administrateur." /> : null}
+          {isAuthenticated && !isBudgetManager ? <ErrorMessage message="Acces refuse. Cette page est reservee au gestionnaire budgetaire." /> : null}
+          {isBudgetManager && !departementId ? <BlockingMessage message="Aucun departement n'est associe a votre compte. Contactez l'administrateur." /> : null}
           {activeExerciceQuery.isError ? <BlockingMessage message="Aucun exercice budgetaire ouvert. Contactez l'administrateur." /> : null}
 
           <section className="grid gap-4 rounded-lg bg-white p-5 text-left shadow-sm ring-1 ring-slate-200 md:grid-cols-2">

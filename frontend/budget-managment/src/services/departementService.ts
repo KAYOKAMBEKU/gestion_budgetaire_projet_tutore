@@ -1,10 +1,19 @@
 import { apiClient } from "../api/client";
 import type { ApiMessage } from "../types/api";
 import type { Departement, DepartementCreate, DepartementUpdate } from "../types/departement";
+import type { User } from "../types/user";
 
 export const departementService = {
   async getAll(): Promise<Departement[]> {
     const { data } = await apiClient.get<Departement[]>("/departements/");
+    return data;
+  },
+  async getAvailableGestionnaires(departementId?: number): Promise<User[]> {
+    const { data } = await apiClient.get<User[]>("/departements/gestionnaires/available", { params: { departement_id: departementId } });
+    return data;
+  },
+  async getGestionnairesByDepartement(departementId: number): Promise<User[]> {
+    const { data } = await apiClient.get<User[]>(`/departements/${departementId}/gestionnaires`);
     return data;
   },
   async getDepartementById(id: number): Promise<Departement> {

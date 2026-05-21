@@ -16,6 +16,8 @@ import { UserList } from "../components/users/UserList";
 import { LoginPage } from "./LoginPage";
 import { CreateBudgetPage } from "../../manager/pages/CreateBudgetPage";
 import { ManagerDashboardPage } from "../../manager/pages/ManagerDashboardPage";
+import { ManagerProjectsPage } from "../../manager/pages/ManagerProjectsPage";
+import { ManagerProjectDetailPage } from "../../manager/pages/ManagerProjectDetailPage";
 
 function UserAdministrationSection({ activeTab }: { activeTab: AdminTabId }) {
   if (activeTab === "roles") {
@@ -157,6 +159,8 @@ export function AppRoutes() {
       <Route element={<ProtectedAdministration />} path="/administration" />
       <Route element={<ManagerDashboardPage />} path="/manager" />
       <Route element={<CreateBudgetPage />} path="/manager/budgets/create" />
+      <Route element={<ManagerProjectsPage />} path="/manager/projects" />
+      <Route element={<ManagerProjectDetailPage />} path="/manager/projects/:id" />
       <Route element={<Navigate replace to="/login" />} path="*" />
     </Routes>
   );
