@@ -18,3 +18,5 @@ class Departement(Base):
         back_populates="departement",
         cascade="all, delete-orphan",
     )
+    gestionnaires = relationship("User", back_populates="departement")
+    projets = relationship("Projet", back_populates="departement", cascade="all, delete-orphan")

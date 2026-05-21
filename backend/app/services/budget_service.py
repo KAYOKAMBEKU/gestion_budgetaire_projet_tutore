@@ -3,6 +3,7 @@ from decimal import Decimal
 from sqlalchemy.orm import Session
 
 from app.models.budget import Budget
+from app.models.projet import Projet
 from app.schemas.budget import BudgetCreate, BudgetUpdate
 from app.services._utils import decimal_sum, require_unique, schema_to_dict, update_model
 
@@ -41,12 +42,30 @@ def get_budgets_by_statut(db: Session, statut: str):
     return db.query(Budget).filter(Budget.statut == statut).all()
 
 
+def get_budgets_by_projet(db: Session, projet_id: int):
+    return db.query(Budget).filter(Budget.projet_id == projet_id).all()
+
+
 def create_budget(db: Session, budget_in: BudgetCreate):
     data = schema_to_dict(budget_in, exclude_unset=False)
     require_unique(get_budget_by_reference(db, data["reference"]), "Un budget avec cette reference existe deja")
     data["montant_total_prevu"] = Decimal("0")
     data["montant_total_realise"] = Decimal("0")
     data["ecart_total"] = Decimal("0")
+
+    projet_id = data.get("projet_id")
+    if projet_id is not None:
+        projet = db.query(Projet).filter(Projet.id == projet_id).first()
+        if projet is None:
+            raise ValueError("Projet introuvable")
+        if projet.departement_id != data["departement_id"]:
+            raise ValueError("Le departement du budget doit correspondre au departement du projet")
+        if projet.exercice_id != data["exercice_id"]:
+            raise ValueError("L'exercice du budget doit correspondre a l'exercice du projet")
+        existing = db.query(Budget).filter(Budget.projet_id == projet_id).first()
+        if existing is not None:
+            raise ValueError("Un budget existe deja pour ce projet")
+
     budget = Budget(**data)
     db.add(budget)
     db.commit()
@@ -69,6 +88,17 @@ def update_budget(db: Session, budget_id: int, budget_in: BudgetUpdate):
             raise ValueError("Un budget avec cette reference existe deja")
     if "statut" in data and data["statut"] not in VALID_STATUTS:
         raise ValueError("Statut de budget invalide")
+    if "projet_id" in data and data["projet_id"] is not None:
+        projet = db.query(Projet).filter(Projet.id == data["projet_id"]).first()
+        if projet is None:
+            raise ValueError("Projet introuvable")
+        if "departement_id" in data and data["departement_id"] is not None and projet.departement_id != data["departement_id"]:
+            raise ValueError("Le departement du budget doit correspondre au departement du projet")
+        if "exercice_id" in data and data["exercice_id"] is not None and projet.exercice_id != data["exercice_id"]:
+            raise ValueError("L'exercice du budget doit correspondre a l'exercice du projet")
+        existing = db.query(Budget).filter(Budget.projet_id == data["projet_id"], Budget.id != budget_id).first()
+        if existing is not None:
+            raise ValueError("Un budget existe deja pour ce projet")
     update_model(budget, budget_in)
     db.commit()
     db.refresh(budget)

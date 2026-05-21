@@ -22,10 +22,12 @@ class Budget(Base):
     departement_id = Column(Integer, ForeignKey("departements.id"), nullable=False)
     exercice_id = Column(Integer, ForeignKey("exercices_budgetaires.id"), nullable=False)
     created_by_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    projet_id = Column(Integer, ForeignKey("projets.id"), nullable=True, unique=True)
 
     departement = relationship("Departement", back_populates="budgets")
     exercice = relationship("ExerciceBudgetaire", back_populates="budgets")
     created_by = relationship("User", back_populates="budgets_crees")
+    projet = relationship("Projet", back_populates="budget")
     lignes_budgetaires = relationship(
         "LigneBudgetaire",
         back_populates="budget",

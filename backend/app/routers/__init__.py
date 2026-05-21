@@ -12,6 +12,7 @@ from app.routers import lignes_budgetaires
 from app.routers import notifications
 from app.routers import permissions
 from app.routers import previsions
+from app.routers import projets
 from app.routers import rapports_budgetaires
 from app.routers import realisations
 from app.routers import roles
@@ -37,3 +38,4 @@ api_router.include_router(actions_correctives.router)
 api_router.include_router(validations_budgetaires.router)
 api_router.include_router(rapports_budgetaires.router)
 api_router.include_router(notifications.router)
+api_router.include_router(projets.router)

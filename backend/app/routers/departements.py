@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.schemas.departement import DepartementCreate, DepartementResponse, DepartementUpdate
+from app.schemas.user import UserSimpleResponse
 from app.services import departement_service
 
 router = APIRouter(prefix="/departements", tags=["Departements"])
@@ -31,6 +32,32 @@ def get_departement_by_name(nom: str, db: Session = Depends(get_db)):
     if departement is None:
         _not_found()
     return departement
+
+
+@router.get("/{departement_id}/gestionnaires", response_model=list[UserSimpleResponse])
+def get_gestionnaires_by_departement(departement_id: int, db: Session = Depends(get_db)):
+    return departement_service.get_gestionnaires_by_departement(db, departement_id)
+
+
+@router.get("/gestionnaires/available", response_model=list[UserSimpleResponse])
+def get_available_gestionnaires(departement_id: int | None = None, db: Session = Depends(get_db)):
+    return departement_service.get_available_gestionnaires(db, departement_id)
+
+
+@router.patch("/{departement_id}/assign-gestionnaire/{user_id}", response_model=UserSimpleResponse)
+def assign_gestionnaire_to_departement(departement_id: int, user_id: int, db: Session = Depends(get_db)):
+    try:
+        return departement_service.assign_gestionnaire_to_departement(db, departement_id, user_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+
+@router.patch("/{departement_id}/remove-gestionnaire/{user_id}", response_model=UserSimpleResponse)
+def remove_gestionnaire_from_departement(departement_id: int, user_id: int, db: Session = Depends(get_db)):
+    try:
+        return departement_service.remove_gestionnaire_from_departement(db, departement_id, user_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
 
 @router.get("/{departement_id}", response_model=DepartementResponse)

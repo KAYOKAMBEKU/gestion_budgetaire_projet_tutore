@@ -70,7 +70,10 @@ def delete_exercice(exercice_id: int, db: Session = Depends(get_db)):
 
 @router.patch("/{exercice_id}/open", response_model=ExerciceBudgetaireResponse)
 def open_exercice(exercice_id: int, db: Session = Depends(get_db)):
-    exercice = exercice_budgetaire_service.open_exercice(db, exercice_id)
+    try:
+        exercice = exercice_budgetaire_service.open_exercice(db, exercice_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     if exercice is None:
         _not_found()
     return exercice
@@ -78,7 +81,10 @@ def open_exercice(exercice_id: int, db: Session = Depends(get_db)):
 
 @router.patch("/{exercice_id}/close", response_model=ExerciceBudgetaireResponse)
 def close_exercice(exercice_id: int, db: Session = Depends(get_db)):
-    exercice = exercice_budgetaire_service.close_exercice(db, exercice_id)
+    try:
+        exercice = exercice_budgetaire_service.close_exercice(db, exercice_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     if exercice is None:
         _not_found()
     return exercice

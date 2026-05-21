@@ -15,3 +15,4 @@ from .realisation import Realisation
 from .role import Role
 from .user import User
 from .validation_budget import ValidationBudget
+from .projet import Projet

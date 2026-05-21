@@ -19,7 +19,6 @@ class ExerciceBudgetaireUpdate(BaseModel):
     libelle: Optional[str] = Field(None, min_length=2, max_length=100)
     date_debut: Optional[date] = None
     date_fin: Optional[date] = None
-    statut: Optional[str] = Field(None, max_length=50)
 
     @model_validator(mode="after")
     def check_dates(cls, values):

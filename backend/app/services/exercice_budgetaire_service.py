@@ -30,14 +30,29 @@ def get_all(db: Session, skip: int = 0, limit: int = 100):
     return get_exercices(db, skip, limit)
 
 
+STATUS_OUVERT = "ouvert"
+STATUS_CLOTURE = "cloture"
+
+
 def get_active_exercice(db: Session):
-    return db.query(ExerciceBudgetaire).filter(ExerciceBudgetaire.statut == "ouvert").first()
+    return db.query(ExerciceBudgetaire).filter(ExerciceBudgetaire.statut == STATUS_OUVERT).first()
+
+
+def _ensure_no_other_open_exercice(db: Session, target_exercice_id: int | None = None):
+    active = get_active_exercice(db)
+    if active is not None and active.id != target_exercice_id:
+        raise ValueError(
+            "Impossible d'ouvrir cet exercice : un autre exercice budgetaire est deja ouvert."
+        )
+    return active
 
 
 def create_exercice(db: Session, exercice_in: ExerciceBudgetaireCreate):
     data = schema_to_dict(exercice_in, exclude_unset=False)
     _validate_dates(data.get("date_debut"), data.get("date_fin"))
     require_unique(get_exercice_by_libelle(db, data["libelle"]), "Un exercice avec ce libelle existe deja")
+    if data.get("statut", STATUS_OUVERT) == STATUS_OUVERT:
+        _ensure_no_other_open_exercice(db)
     exercice = ExerciceBudgetaire(**data)
     db.add(exercice)
     db.commit()
@@ -53,7 +68,7 @@ def update_exercice(db: Session, exercice_id: int, exercice_in: ExerciceBudgetai
     exercice = get_exercice_by_id(db, exercice_id)
     if exercice is None:
         return None
-    if exercice.statut == "cloture":
+    if exercice.statut == STATUS_CLOTURE:
         raise ValueError("Un exercice cloture ne peut pas etre modifie")
     data = schema_to_dict(exercice_in)
     date_debut = data.get("date_debut", exercice.date_debut)
@@ -93,9 +108,10 @@ def open_exercice(db: Session, exercice_id: int):
     exercice = get_exercice_by_id(db, exercice_id)
     if exercice is None:
         return None
-    for opened in db.query(ExerciceBudgetaire).filter(ExerciceBudgetaire.statut == "ouvert").all():
-        opened.statut = "cloture"
-    exercice.statut = "ouvert"
+    if exercice.statut == STATUS_OUVERT:
+        return exercice
+    _ensure_no_other_open_exercice(db, target_exercice_id=exercice.id)
+    exercice.statut = STATUS_OUVERT
     db.commit()
     db.refresh(exercice)
     return exercice
@@ -105,7 +121,9 @@ def close_exercice(db: Session, exercice_id: int):
     exercice = get_exercice_by_id(db, exercice_id)
     if exercice is None:
         return None
-    exercice.statut = "cloture"
+    if exercice.statut != STATUS_OUVERT:
+        raise ValueError("Impossible de clôturer cet exercice : seul un exercice ouvert peut être clôturé.")
+    exercice.statut = STATUS_CLOTURE
     db.commit()
     db.refresh(exercice)
     return exercice

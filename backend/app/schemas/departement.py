@@ -1,6 +1,12 @@
-from typing import Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, List, Optional
 
 from pydantic import BaseModel, Field, ConfigDict
+
+if TYPE_CHECKING:
+    from .user import UserSimpleResponse
+    from .projet import ProjetSimpleResponse
 
 
 class DepartementBase(BaseModel):
@@ -11,7 +17,7 @@ class DepartementBase(BaseModel):
 
 
 class DepartementCreate(DepartementBase):
-    pass
+    gestionnaire_id: Optional[int] = None
 
 
 class DepartementUpdate(BaseModel):
@@ -19,8 +25,17 @@ class DepartementUpdate(BaseModel):
     description: Optional[str] = None
     responsable: Optional[str] = Field(None, max_length=150)
     statut: Optional[str] = Field(None, max_length=50)
+    gestionnaire_id: Optional[int] = None
 
 
-class DepartementResponse(DepartementBase):
+class DepartementSimpleResponse(DepartementBase):
     id: int
     model_config = ConfigDict(from_attributes=True)
+
+
+DepartementResponse = DepartementSimpleResponse
+
+
+class DepartementDetailResponse(DepartementSimpleResponse):
+    gestionnaires: List["UserSimpleResponse"] = []
+    projets: List["ProjetSimpleResponse"] = []

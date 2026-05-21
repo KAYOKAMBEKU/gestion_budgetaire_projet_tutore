@@ -99,6 +99,15 @@ def seed_admin(db: Session) -> None:
         db.add(manager_role)
         db.flush()
 
+    project_manager_role = db.query(Role).filter(Role.nom_role == "Chef de projet").first()
+    if project_manager_role is None:
+        project_manager_role = Role(
+            nom_role="Chef de projet",
+            description="Responsable d'un projet",
+        )
+        db.add(project_manager_role)
+        db.flush()
+
     finance = db.query(Departement).filter(Departement.nom == "Finance").first()
     if finance is None:
         finance = Departement(
@@ -118,6 +127,7 @@ def seed_admin(db: Session) -> None:
             email=MANAGER_EMAIL,
             mot_de_passe=hash_password(MANAGER_PASSWORD),
             statut="actif",
+            departement=finance,
         )
         db.add(manager)
         db.flush()
@@ -126,6 +136,7 @@ def seed_admin(db: Session) -> None:
         manager.prenom = manager.prenom or "Finance"
         manager.statut = "actif"
         manager.mot_de_passe = hash_password(MANAGER_PASSWORD)
+        manager.departement = manager.departement or finance
 
     if manager_role not in manager.roles:
         manager.roles.append(manager_role)

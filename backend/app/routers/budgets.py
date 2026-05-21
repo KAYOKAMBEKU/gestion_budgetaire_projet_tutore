@@ -43,6 +43,11 @@ def get_budgets_by_exercice(exercice_id: int, db: Session = Depends(get_db)):
     return budget_service.get_budgets_by_exercice(db, exercice_id)
 
 
+@router.get("/by-projet/{projet_id}", response_model=list[BudgetResponse])
+def get_budgets_by_projet(projet_id: int, db: Session = Depends(get_db)):
+    return budget_service.get_budgets_by_projet(db, projet_id)
+
+
 @router.get("/by-statut/{statut}", response_model=list[BudgetResponse])
 def get_budgets_by_statut(statut: str, db: Session = Depends(get_db)):
     return budget_service.get_budgets_by_statut(db, statut)

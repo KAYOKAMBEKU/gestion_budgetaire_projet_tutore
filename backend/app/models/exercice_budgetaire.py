@@ -18,3 +18,4 @@ class ExerciceBudgetaire(Base):
         back_populates="exercice",
         cascade="all, delete-orphan",
     )
+    projets = relationship("Projet", back_populates="exercice", cascade="all, delete-orphan")

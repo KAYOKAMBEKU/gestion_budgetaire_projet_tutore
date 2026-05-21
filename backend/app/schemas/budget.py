@@ -1,6 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -8,6 +8,9 @@ from .departement import DepartementResponse
 from .exercice_budgetaire import ExerciceBudgetaireResponse
 from .ligne_budgetaire import LigneBudgetaireSimpleResponse
 from .user import UserSimpleResponse
+
+if TYPE_CHECKING:
+    from .projet import ProjetSimpleResponse
 
 
 class BudgetBase(BaseModel):
@@ -20,6 +23,7 @@ class BudgetBase(BaseModel):
     statut: Optional[str] = Field("brouillon", max_length=50)
     departement_id: int
     exercice_id: int
+    projet_id: Optional[int] = None
     created_by_id: Optional[int] = None
 
 
@@ -51,6 +55,8 @@ class BudgetResponse(BudgetSimpleResponse):
     departement: Optional[DepartementResponse] = None
     exercice: Optional[ExerciceBudgetaireResponse] = None
     created_by: Optional[UserSimpleResponse] = None
+    projet_id: Optional[int] = None
+    projet: Optional["ProjetSimpleResponse"] = None
 
 
 class BudgetDetailResponse(BudgetResponse):

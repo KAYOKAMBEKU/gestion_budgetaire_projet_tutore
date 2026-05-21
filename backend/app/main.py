@@ -1,7 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app import seed
 from app.routers import api_router
+
 
 app = FastAPI()
 
@@ -15,6 +17,11 @@ app.add_middleware(
 )
 
 app.include_router(api_router, prefix="/api/v1")
+
+@app.on_event("startup")
+def run_seed() -> None:
+    seed.main()
+
 
 @app.get("/")
 def test() :

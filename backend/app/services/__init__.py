@@ -9,6 +9,7 @@ from . import ligne_budgetaire_service
 from . import notification_service
 from . import permission_service
 from . import prevision_service
+from . import projet_service
 from . import rapport_budgetaire_service
 from . import realisation_service
 from . import role_service
@@ -27,6 +28,7 @@ __all__ = [
     "notification_service",
     "permission_service",
     "prevision_service",
+    "projet_service",
     "rapport_budgetaire_service",
     "realisation_service",
     "role_service",
