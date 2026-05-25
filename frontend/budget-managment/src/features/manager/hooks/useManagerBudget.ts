@@ -58,6 +58,17 @@ export function useManagerBudgets(departementId?: number) {
   });
 }
 
+export function useBudgetsByProjects(projectIds: number[]) {
+  return useQuery({
+    queryKey: ["budgets", "projets", projectIds],
+    queryFn: async () => {
+      const budgetsByProject = await Promise.all(projectIds.map((projectId) => budgetService.getBudgetsByProjet(projectId)));
+      return budgetsByProject.flat();
+    },
+    enabled: projectIds.length > 0,
+  });
+}
+
 export function useSubmitBudget() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -72,10 +83,7 @@ export function useCreateBudgetWithLines() {
   return useMutation({
     mutationFn: async (payload: CreateBudgetWithLinesPayload): Promise<Budget> => {
       const { lignes, ...budgetPayload } = payload;
-      const budget = await budgetService.createBudget({
-        ...budgetPayload,
-        statut: "brouillon",
-      });
+      const budget = await budgetService.createBudget(budgetPayload);
 
       for (const line of lignes) {
         const linePayload: LigneBudgetaireCreate = {

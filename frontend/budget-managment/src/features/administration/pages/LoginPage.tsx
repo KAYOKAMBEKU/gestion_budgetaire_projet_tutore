@@ -10,6 +10,9 @@ function getHomePathForUser(user: AuthUser | null) {
   if (user?.roles.includes("Gestionnaire") || user?.roles.includes("Gestionnaire Budgetaire")) {
     return "/manager";
   }
+  if (user?.roles.includes("Chef de projet")) {
+  return "/chef/projets";
+}
   return "/login";
 }
 

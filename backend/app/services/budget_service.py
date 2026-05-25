@@ -3,11 +3,32 @@ from decimal import Decimal
 from sqlalchemy.orm import Session
 
 from app.models.budget import Budget
+from app.models.exercice_budgetaire import ExerciceBudgetaire
 from app.models.projet import Projet
+from app.models.user import User
 from app.schemas.budget import BudgetCreate, BudgetUpdate
 from app.services._utils import decimal_sum, require_unique, schema_to_dict, update_model
 
 VALID_STATUTS = {"brouillon", "soumis", "valide", "rejete", "en_execution", "cloture"}
+ROLE_CHEF_PROJET = "chef de projet"
+ROLE_GESTIONNAIRE = "gestionnaire"
+STATUS_EXERCICE_OUVERT = "ouvert"
+
+
+def _has_role(user: User | None, role_name: str) -> bool:
+    if user is None:
+        return False
+    return any((role.nom_role or "").strip().lower() == role_name for role in user.roles)
+
+
+def _is_gestionnaire(user: User | None) -> bool:
+    if user is None:
+        return False
+    return any(ROLE_GESTIONNAIRE in (role.nom_role or "").strip().lower() for role in user.roles)
+
+
+def _get_active_exercice(db: Session):
+    return db.query(ExerciceBudgetaire).filter(ExerciceBudgetaire.statut == STATUS_EXERCICE_OUVERT).first()
 
 
 def get_budget_by_id(db: Session, budget_id: int):
@@ -46,27 +67,50 @@ def get_budgets_by_projet(db: Session, projet_id: int):
     return db.query(Budget).filter(Budget.projet_id == projet_id).all()
 
 
-def create_budget(db: Session, budget_in: BudgetCreate):
+def create_budget(db: Session, budget_in: BudgetCreate, current_user: User | None):
+    if not _has_role(current_user, ROLE_CHEF_PROJET):
+        if _is_gestionnaire(current_user):
+            raise PermissionError("Le Gestionnaire ne peut pas creer de budget. Seul le Chef de projet peut creer le budget de son projet.")
+        raise PermissionError("Seul un utilisateur ayant le role 'Chef de projet' peut creer un budget.")
+    if current_user is None:
+        raise PermissionError("Authentification requise pour creer un budget.")
     data = schema_to_dict(budget_in, exclude_unset=False)
     require_unique(get_budget_by_reference(db, data["reference"]), "Un budget avec cette reference existe deja")
-    data["montant_total_prevu"] = Decimal("0")
-    data["montant_total_realise"] = Decimal("0")
-    data["ecart_total"] = Decimal("0")
 
-    projet_id = data.get("projet_id")
-    if projet_id is not None:
-        projet = db.query(Projet).filter(Projet.id == projet_id).first()
-        if projet is None:
-            raise ValueError("Projet introuvable")
-        if projet.departement_id != data["departement_id"]:
-            raise ValueError("Le departement du budget doit correspondre au departement du projet")
-        if projet.exercice_id != data["exercice_id"]:
-            raise ValueError("L'exercice du budget doit correspondre a l'exercice du projet")
-        existing = db.query(Budget).filter(Budget.projet_id == projet_id).first()
-        if existing is not None:
-            raise ValueError("Un budget existe deja pour ce projet")
+    active_exercice = _get_active_exercice(db)
+    if active_exercice is None:
+        raise ValueError("Aucun exercice budgetaire ouvert. Impossible de creer un budget.")
 
-    budget = Budget(**data)
+    projet_id = data["projet_id"]
+    projet = db.query(Projet).filter(Projet.id == projet_id).first()
+    if projet is None:
+        raise ValueError("Projet introuvable")
+    if projet.chef_projet_id != current_user.id:
+        raise PermissionError("Vous ne pouvez creer un budget que pour l'un de vos projets.")
+    if projet.exercice_id != active_exercice.id:
+        raise ValueError("Le projet choisi n'appartient pas a l'exercice budgetaire ouvert.")
+
+    existing = (
+        db.query(Budget)
+        .filter(Budget.projet_id == projet.id, Budget.exercice_id == active_exercice.id)
+        .first()
+    )
+    if existing is not None:
+        raise ValueError("Un budget existe deja pour ce projet dans l'exercice budgetaire ouvert.")
+
+    budget = Budget(
+        reference=data["reference"],
+        libelle=data["libelle"],
+        description=data.get("description"),
+        statut="brouillon",
+        montant_total_prevu=Decimal("0"),
+        montant_total_realise=Decimal("0"),
+        ecart_total=Decimal("0"),
+        projet_id=projet.id,
+        exercice_id=active_exercice.id,
+        created_by_id=current_user.id,
+        departement_id=projet.departement_id,
+    )
     db.add(budget)
     db.commit()
     db.refresh(budget)
@@ -74,7 +118,7 @@ def create_budget(db: Session, budget_in: BudgetCreate):
 
 
 def create(db: Session, obj_in: BudgetCreate):
-    return create_budget(db, obj_in)
+    return create_budget(db, obj_in, current_user=None)
 
 
 def update_budget(db: Session, budget_id: int, budget_in: BudgetUpdate):

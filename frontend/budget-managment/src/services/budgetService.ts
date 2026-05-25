@@ -14,6 +14,10 @@ export const budgetService = {
     const { data } = await apiClient.get<Budget[]>(`/budgets/by-statut/${statut}`);
     return data;
   },
+  async getBudgetsByProjet(projetId: number): Promise<Budget[]> {
+    const { data } = await apiClient.get<Budget[]>(`/budgets/by-projet/${projetId}`);
+    return data;
+  },
   async createBudget(payload: BudgetCreate): Promise<Budget> {
     const { data } = await apiClient.post<Budget>("/budgets/", payload);
     return data;

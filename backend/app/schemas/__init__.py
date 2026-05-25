@@ -105,3 +105,20 @@ from .validation_budget import (
     ValidationBudgetResponse,
     ValidationBudgetUpdate,
 )
+
+from .budget import BudgetSimpleResponse
+from .departement import DepartementDetailResponse
+from .projet import ProjetDetailResponse, ProjetResponse, ProjetSimpleResponse
+from .user import UserResponse
+
+ProjetDetailResponse.model_rebuild(_types_namespace={"BudgetSimpleResponse": BudgetSimpleResponse})
+ProjetResponse.model_rebuild()
+BudgetResponse.model_rebuild()
+BudgetDetailResponse.model_rebuild()
+DepartementDetailResponse.model_rebuild(
+    _types_namespace={
+        "ProjetSimpleResponse": ProjetSimpleResponse,
+        "UserSimpleResponse": UserSimpleResponse,
+    }
+)
+UserResponse.model_rebuild()

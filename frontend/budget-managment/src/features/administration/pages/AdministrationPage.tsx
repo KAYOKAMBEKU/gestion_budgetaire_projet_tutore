@@ -14,10 +14,11 @@ import { PermissionList } from "../components/permissions/PermissionList";
 import { RoleList } from "../components/roles/RoleList";
 import { UserList } from "../components/users/UserList";
 import { LoginPage } from "./LoginPage";
-import { CreateBudgetPage } from "../../manager/pages/CreateBudgetPage";
 import { ManagerDashboardPage } from "../../manager/pages/ManagerDashboardPage";
 import { ManagerProjectsPage } from "../../manager/pages/ManagerProjectsPage";
 import { ManagerProjectDetailPage } from "../../manager/pages/ManagerProjectDetailPage";
+import { CreateProjectBudgetPage } from "../../manager/pages/CreateProjectBudgetPage";
+import { ChefProjectsPage } from "../../manager/pages/ChefProjectsPage";
 
 function UserAdministrationSection({ activeTab }: { activeTab: AdminTabId }) {
   if (activeTab === "roles") {
@@ -121,12 +122,15 @@ export function AdministrationPage() {
 }
 
 function ProtectedAdministration() {
-  const { authLoading, isAdmin, isAuthenticated, isManager } = useAuth();
+  const { authLoading, isAdmin, isAuthenticated, isManager, isProjectManager } = useAuth();
   if (authLoading) {
     return <main className="grid min-h-screen place-items-center bg-slate-100 text-sm font-semibold text-slate-600">Verification de la session...</main>;
   }
   if (!isAuthenticated) {
     return <Navigate replace to="/login" />;
+  }
+  if (!isAdmin && isProjectManager) {
+    return <Navigate replace to="/chef/projets" />;
   }
   if (!isAdmin && isManager) {
     return <Navigate replace to="/manager" />;
@@ -135,7 +139,7 @@ function ProtectedAdministration() {
 }
 
 function HomeRedirect() {
-  const { authLoading, isAdmin, isAuthenticated, isManager } = useAuth();
+  const { authLoading, isAdmin, isAuthenticated, isManager, isProjectManager } = useAuth();
   if (authLoading) {
     return <main className="grid min-h-screen place-items-center bg-slate-100 text-sm font-semibold text-slate-600">Verification de la session...</main>;
   }
@@ -144,6 +148,9 @@ function HomeRedirect() {
   }
   if (isAdmin) {
     return <Navigate replace to="/administration" />;
+  }
+  if (isProjectManager) {
+    return <Navigate replace to="/chef/projets" />;
   }
   if (isManager) {
     return <Navigate replace to="/manager" />;
@@ -158,9 +165,11 @@ export function AppRoutes() {
       <Route element={<HomeRedirect />} path="/" />
       <Route element={<ProtectedAdministration />} path="/administration" />
       <Route element={<ManagerDashboardPage />} path="/manager" />
-      <Route element={<CreateBudgetPage />} path="/manager/budgets/create" />
+      <Route element={<Navigate replace to="/manager/projects" />} path="/manager/budgets/create" />
       <Route element={<ManagerProjectsPage />} path="/manager/projects" />
       <Route element={<ManagerProjectDetailPage />} path="/manager/projects/:id" />
+      <Route element={<ChefProjectsPage />} path="/chef/projets" />
+      <Route element={<CreateProjectBudgetPage />} path="/chef/budgets/create" />
       <Route element={<Navigate replace to="/login" />} path="*" />
     </Routes>
   );

@@ -9,6 +9,7 @@ from app.services._utils import require_unique, schema_to_dict, update_model
 
 VALID_STATUTS = {"brouillon", "soumis", "approuve", "rejete", "en_execution", "cloture"}
 ROLE_CHEF_PROJET = "chef de projet"
+ROLE_GESTIONNAIRE = "gestionnaire"
 
 
 def _has_role(user: User, role_keyword: str) -> bool:
@@ -22,6 +23,12 @@ def _has_role(user: User, role_keyword: str) -> bool:
 
 def _is_chef_de_projet(user: User) -> bool:
     return _has_role(user, ROLE_CHEF_PROJET)
+
+
+def _is_gestionnaire(user: User) -> bool:
+    if user is None:
+        return False
+    return any(ROLE_GESTIONNAIRE in (role.nom_role or "").strip().lower() for role in user.roles)
 
 
 def get_projet_by_id(db: Session, projet_id: int):
@@ -61,12 +68,15 @@ def get_projets_by_statut(db: Session, statut: str):
 
 def create_projet(db: Session, projet_in: ProjetCreate, current_user: User):
     if not _is_chef_de_projet(current_user):
-        raise ValueError("Seul un utilisateur ayant le rôle 'Chef de projet' peut créer un projet.")
-    if current_user.departement_id is None:
-        raise ValueError("Le chef de projet doit appartenir à un département.")
-
+        if _is_gestionnaire(current_user):
+            raise PermissionError("Le Gestionnaire ne peut pas creer de projet. Il supervise uniquement les projets des Chefs de projet de son departement.")
+        raise PermissionError("Seul un utilisateur ayant le role 'Chef de projet' peut creer un projet.")
     data = schema_to_dict(projet_in, exclude_unset=False)
     require_unique(get_projet_by_code(db, data["code"]), "Un projet avec ce code existe deja")
+
+    departement = db.query(Departement).filter(Departement.id == data["departement_id"]).first()
+    if departement is None:
+        raise ValueError("Departement introuvable")
 
     exercice = db.query(ExerciceBudgetaire).filter(ExerciceBudgetaire.id == data["exercice_id"]).first()
     if exercice is None:
@@ -76,7 +86,6 @@ def create_projet(db: Session, projet_in: ProjetCreate, current_user: User):
         **data,
         created_by_id=current_user.id,
         chef_projet_id=current_user.id,
-        departement_id=current_user.departement_id,
     )
     db.add(projet)
     db.commit()
@@ -112,7 +121,7 @@ def update_projet(db: Session, projet_id: int, projet_in: ProjetUpdate):
         chef_projet = db.query(User).filter(User.id == data["chef_projet_id"]).first()
         if chef_projet is None:
             raise ValueError("Chef de projet introuvable")
-        if not _is_project_manager(chef_projet):
+        if not _is_chef_de_projet(chef_projet):
             raise ValueError("Le chef de projet doit avoir le bon rôle")
         if chef_projet.departement_id is None:
             raise ValueError("Le chef de projet doit appartenir a un departement")

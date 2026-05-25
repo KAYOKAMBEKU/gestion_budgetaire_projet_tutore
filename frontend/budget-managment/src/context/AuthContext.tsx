@@ -15,6 +15,7 @@ interface AuthContextValue {
   isAdmin: boolean;
   isManager: boolean;
   isBudgetManager: boolean;
+  isProjectManager: boolean;
   login: (email: string, password: string) => Promise<AuthUser>;
   logout: () => void;
 }
@@ -67,6 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const isBudgetManager = currentUser?.roles.includes("Gestionnaire Budgetaire") ?? false;
+  const isProjectManager = currentUser?.roles.includes("Chef de projet") ?? false;
 
   const value: AuthContextValue = useMemo(
     () => ({
@@ -80,6 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAdmin: currentUser?.roles.includes("Administrateur") ?? false,
       isManager: currentUser?.roles.includes("Gestionnaire") || currentUser?.roles.includes("Gestionnaire Budgetaire") || false,
       isBudgetManager,
+      isProjectManager,
       async login(email: string, password: string) {
         try {
           const response = await authService.login(email, password);
@@ -98,7 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setCurrentUser(null);
       },
     }),
-    [authLoading, currentUser, isBudgetManager],
+    [authLoading, currentUser, isBudgetManager, isProjectManager],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

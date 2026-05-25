@@ -2,15 +2,13 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Optional, TYPE_CHECKING
+from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-if TYPE_CHECKING:
-    from .departement import DepartementSimpleResponse
-    from .exercice_budgetaire import ExerciceBudgetaireResponse
-    from .budget import BudgetSimpleResponse
-    from .user import UserSimpleResponse
+from .departement import DepartementSimpleResponse
+from .exercice_budgetaire import ExerciceBudgetaireResponse
+from .user import UserSimpleResponse
 
 
 class ProjetBase(BaseModel):
@@ -23,9 +21,11 @@ class ProjetBase(BaseModel):
     date_fin_prevue: Optional[date] = None
     cout_estime: Optional[Decimal] = Field(None, ge=0)
     budget_realise_total: Optional[Decimal] = Field(None, ge=0)
+    model_config = ConfigDict(extra="forbid")
 
 
 class ProjetCreate(ProjetBase):
+    departement_id: int
     exercice_id: int
 
 
@@ -40,10 +40,8 @@ class ProjetUpdate(BaseModel):
     date_fin_prevue: Optional[date] = None
     cout_estime: Optional[Decimal] = Field(None, ge=0)
     budget_realise_total: Optional[Decimal] = Field(None, ge=0)
-    departement_id: Optional[int] = None
     exercice_id: Optional[int] = None
-    created_by_id: Optional[int] = None
-    chef_projet_id: Optional[int] = None
+    model_config = ConfigDict(extra="forbid")
 
     @model_validator(mode="after")
     def check_dates(cls, values):
@@ -69,14 +67,11 @@ class ProjetSimpleResponse(ProjetBase):
 
 
 class ProjetResponse(ProjetSimpleResponse):
-    departement: Optional["DepartementSimpleResponse"] = None
-    chef_projet: Optional["UserSimpleResponse"] = None
-    created_by: Optional["UserSimpleResponse"] = None
-    pass
+    departement: Optional[DepartementSimpleResponse] = None
+    chef_projet: Optional[UserSimpleResponse] = None
+    created_by: Optional[UserSimpleResponse] = None
 
 
 class ProjetDetailResponse(ProjetResponse):
-    departement: Optional["DepartementSimpleResponse"] = None
-    exercice: Optional["ExerciceBudgetaireResponse"] = None
-    created_by: Optional["UserSimpleResponse"] = None
+    exercice: Optional[ExerciceBudgetaireResponse] = None
     budget: Optional["BudgetSimpleResponse"] = None

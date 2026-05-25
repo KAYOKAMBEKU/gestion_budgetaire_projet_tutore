@@ -1,16 +1,13 @@
-from datetime import datetime
 from decimal import Decimal
-from typing import List, Optional, TYPE_CHECKING
+from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from .departement import DepartementResponse
 from .exercice_budgetaire import ExerciceBudgetaireResponse
 from .ligne_budgetaire import LigneBudgetaireSimpleResponse
+from .projet import ProjetSimpleResponse
 from .user import UserSimpleResponse
-
-if TYPE_CHECKING:
-    from .projet import ProjetSimpleResponse
 
 
 class BudgetBase(BaseModel):
@@ -21,13 +18,11 @@ class BudgetBase(BaseModel):
     montant_total_realise: Optional[Decimal] = Field(None, ge=0)
     ecart_total: Optional[Decimal] = Field(None)
     statut: Optional[str] = Field("brouillon", max_length=50)
-    departement_id: int
-    exercice_id: int
-    projet_id: Optional[int] = None
-    created_by_id: Optional[int] = None
+    model_config = ConfigDict(extra="forbid")
 
 
 class BudgetCreate(BudgetBase):
+    projet_id: int
     montant_total_prevu: Optional[Decimal] = None
     montant_total_realise: Optional[Decimal] = None
     ecart_total: Optional[Decimal] = None
@@ -41,13 +36,15 @@ class BudgetUpdate(BaseModel):
     montant_total_realise: Optional[Decimal] = Field(None, ge=0)
     ecart_total: Optional[Decimal] = None
     statut: Optional[str] = Field(None, max_length=50)
-    departement_id: Optional[int] = None
-    exercice_id: Optional[int] = None
-    created_by_id: Optional[int] = None
+    model_config = ConfigDict(extra="forbid")
 
 
 class BudgetSimpleResponse(BudgetBase):
     id: int
+    departement_id: int
+    exercice_id: int
+    created_by_id: int
+    projet_id: Optional[int] = None
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -56,7 +53,7 @@ class BudgetResponse(BudgetSimpleResponse):
     exercice: Optional[ExerciceBudgetaireResponse] = None
     created_by: Optional[UserSimpleResponse] = None
     projet_id: Optional[int] = None
-    projet: Optional["ProjetSimpleResponse"] = None
+    projet: Optional[ProjetSimpleResponse] = None
 
 
 class BudgetDetailResponse(BudgetResponse):

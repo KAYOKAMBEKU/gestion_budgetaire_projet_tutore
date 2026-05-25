@@ -17,6 +17,11 @@ export const projetService = {
     return data;
   },
 
+  async getProjectsByChef(chefProjetId: number): Promise<Projet[]> {
+    const { data } = await apiClient.get<Projet[]>("/projets/", { params: { chef_projet_id: chefProjetId } });
+    return data;
+  },
+
   async getProjectById(id: number): Promise<Projet> {
     const { data } = await apiClient.get<Projet>(`/projets/${id}`);
     return data;

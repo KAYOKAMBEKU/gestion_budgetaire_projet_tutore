@@ -1,8 +1,6 @@
-import { Link, Navigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
-import { ManagerBudgetsStatus } from "../components/ManagerBudgetsStatus";
 import { ManagerSidebar } from "../components/ManagerSidebar";
-import { useManagerBudgets } from "../hooks/useManagerBudget";
 
 function AccessMessage({ title, message }: { title: string; message: string }) {
   return (
@@ -16,8 +14,7 @@ function AccessMessage({ title, message }: { title: string; message: string }) {
 }
 
 export function ManagerDashboardPage() {
-  const { authLoading, currentUser, isAuthenticated, isManager, isBudgetManager } = useAuth();
-  const managerBudgetsQuery = useManagerBudgets(currentUser?.departement_id);
+  const { authLoading, currentUser, isAuthenticated, isManager } = useAuth();
 
   if (authLoading) {
     return <main className="grid min-h-screen place-items-center bg-slate-100 text-sm font-semibold text-slate-600">Verification de la session...</main>;
@@ -37,15 +34,8 @@ export function ManagerDashboardPage() {
           <section className="rounded-lg bg-white p-6 text-left shadow-sm ring-1 ring-slate-200">
             <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">Espace gestionnaire</p>
             <h1 className="mt-2 text-3xl font-bold text-slate-950">Bienvenue, {currentUser?.prenom ?? currentUser?.nom}</h1>
-            <p className="mt-2 text-sm text-slate-600">Vous pouvez creer un budget pour votre departement et le soumettre pour validation.</p>
+            <p className="mt-2 text-sm text-slate-600">Vous pouvez superviser les projets des Chefs de projet de votre departement.</p>
           </section>
-          {isBudgetManager ? (
-            <Link className="rounded-lg border border-slate-200 bg-white p-6 text-left shadow-sm transition hover:border-emerald-300 hover:shadow-md" to="/manager/budgets/create">
-              <p className="text-lg font-bold text-slate-950">Creer un budget</p>
-              <p className="mt-2 text-sm text-slate-600">Saisir les informations du budget, ajouter les lignes budgetaires, puis soumettre a l'administrateur.</p>
-            </Link>
-          ) : null}
-          <ManagerBudgetsStatus budgets={managerBudgetsQuery.data ?? []} loading={managerBudgetsQuery.isLoading} />
         </div>
       </div>
     </main>

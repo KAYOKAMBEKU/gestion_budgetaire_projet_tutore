@@ -26,6 +26,8 @@ def build_auth_user(user: User) -> AuthUser:
         email=user.email,
         statut=user.statut,
         date_creation=user.date_creation,
+        departement_id=user.departement_id,
+        departement=user.departement,
         roles=roles,
         permissions=permissions,
     )

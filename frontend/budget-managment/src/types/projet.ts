@@ -47,8 +47,6 @@ export interface ProjetCreate {
   cout_estime?: number;
   departement_id: number;
   exercice_id: number;
-  created_by_id: number;
-  chef_projet_id: number;
 }
 
 export interface ProjetUpdate {
@@ -62,8 +60,5 @@ export interface ProjetUpdate {
   date_fin_prevue?: string;
   cout_estime?: number;
   budget_realise_total?: number;
-  departement_id?: number;
   exercice_id?: number;
-  created_by_id?: number;
-  chef_projet_id?: number;
 }

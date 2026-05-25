@@ -13,16 +13,14 @@ export interface Budget {
   departement_id: number;
   exercice_id: number;
   created_by_id?: number | null;
+  projet_id?: number | null;
 }
 
 export interface BudgetCreate {
   reference: string;
   libelle: string;
   description?: string;
-  departement_id: number;
-  exercice_id: number;
-  created_by_id?: number;
-  statut?: BudgetStatus;
+  projet_id: number;
 }
 
 export interface BudgetUpdate {

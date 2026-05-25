@@ -9,6 +9,25 @@ export function useManagerProjects(departementId?: number) {
   });
 }
 
+export function useChefProjects(chefProjetId?: number) {
+  return useQuery({
+    queryKey: ["projets", "chef", chefProjetId],
+    queryFn: () => projetService.getProjectsByChef(chefProjetId ?? 0),
+    enabled: Boolean(chefProjetId),
+  });
+}
+
+export function useCreateProject() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: projetService.createProject,
+    onSuccess: (project) => {
+      void queryClient.invalidateQueries({ queryKey: ["projets"] });
+      void queryClient.invalidateQueries({ queryKey: ["projets", "chef", project.chef_projet_id] });
+    },
+  });
+}
+
 export function useProject(projectId?: number) {
   return useQuery({
     queryKey: ["projets", projectId],
