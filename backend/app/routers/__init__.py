@@ -9,6 +9,7 @@ from app.routers import departements
 from app.routers import ecarts_budgetaires
 from app.routers import exercices_budgetaires
 from app.routers import lignes_budgetaires
+from app.routers import mouvements_financiers
 from app.routers import notifications
 from app.routers import permissions
 from app.routers import previsions
@@ -30,6 +31,7 @@ api_router.include_router(exercices_budgetaires.router)
 api_router.include_router(categories_budgetaires.router)
 api_router.include_router(budgets.router)
 api_router.include_router(lignes_budgetaires.router)
+api_router.include_router(mouvements_financiers.router)
 api_router.include_router(previsions.router)
 api_router.include_router(realisations.router)
 api_router.include_router(ecarts_budgetaires.router)

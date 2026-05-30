@@ -5,6 +5,7 @@ import { useAppDispatch } from "../../../../store";
 import { showToast } from "../../../../store/slices/uiSlice";
 import type { Permission, PermissionCreate, PermissionUpdate } from "../../../../types/permission";
 import { useCreatePermission, useDeletePermission, usePermissions, useUpdatePermission } from "../../hooks/usePermissions";
+import { ActionIconButton, EditIcon, TrashIcon } from "../ActionIconButton";
 import { ConfirmModal } from "../ConfirmModal";
 import { DataTable, type DataTableColumn } from "../DataTable";
 import { InlineError, LoadingState, SectionHeader } from "../SectionHeader";
@@ -36,7 +37,7 @@ export function PermissionList() {
   }
 
   const columns: DataTableColumn<Permission>[] = [
-    { key: "code", label: "Code", render: (permission) => <span className="font-semibold text-slate-950">{permission.code}</span> },
+    { key: "code", label: "Code", render: (permission) => <span className="font-semibold text-[#1F2937]">{permission.code}</span> },
     { key: "description", label: "Description", render: (permission) => permission.description || "Sans description" },
   ];
 
@@ -61,8 +62,12 @@ export function PermissionList() {
         getRowKey={(permission) => permission.id}
         actions={(permission) => (
           <div className="flex flex-wrap justify-end gap-2">
-            <button className="text-sm font-semibold text-blue-600 hover:text-blue-800" onClick={() => setFormPermission(permission)}>Modifier</button>
-            <button className="text-sm font-semibold text-rose-600 hover:text-rose-800" onClick={() => setDeleteTarget(permission)}>Supprimer</button>
+            <ActionIconButton className="text-blue-600 hover:text-[#1D4ED8]" label="Modifier la permission" onClick={() => setFormPermission(permission)}>
+              <EditIcon />
+            </ActionIconButton>
+            <ActionIconButton className="text-[#DC2626] hover:text-[#B91C1C]" label="Supprimer la permission" onClick={() => setDeleteTarget(permission)}>
+              <TrashIcon />
+            </ActionIconButton>
           </div>
         )}
       />

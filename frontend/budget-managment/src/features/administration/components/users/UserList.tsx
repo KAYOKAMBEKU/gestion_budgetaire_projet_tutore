@@ -5,6 +5,7 @@ import { useAppDispatch } from "../../../../store";
 import { showToast } from "../../../../store/slices/uiSlice";
 import type { Role } from "../../../../types/role";
 import type { User, UserCreate, UserUpdate } from "../../../../types/user";
+import { ActionIconButton, EditIcon, EyeIcon, RolesIcon, ToggleIcon, TrashIcon } from "../ActionIconButton";
 import { ConfirmModal } from "../ConfirmModal";
 import { DataTable, type DataTableColumn } from "../DataTable";
 import { InlineError, LoadingState, SectionHeader } from "../SectionHeader";
@@ -58,7 +59,7 @@ export function UserList() {
   }
 
   const columns: DataTableColumn<User>[] = [
-    { key: "name", label: "Utilisateur", render: (user) => <div><p className="font-semibold text-slate-950">{user.prenom} {user.nom}</p><p className="text-xs text-slate-500">{user.email}</p></div> },
+    { key: "name", label: "Utilisateur", render: (user) => <div><p className="font-semibold text-[#1F2937]">{user.prenom} {user.nom}</p><p className="text-xs text-[#6B7280]">{user.email}</p></div> },
     { key: "status", label: "Statut", render: (user) => <StatusBadge status={user.statut} /> },
     { key: "roles", label: "Roles", render: (user) => user.roles?.map((role) => role.nom_role).join(", ") || "Aucun role" },
   ];
@@ -89,16 +90,25 @@ export function UserList() {
         getRowKey={(user) => user.id}
         actions={(user) => (
           <div className="flex flex-wrap justify-end gap-2">
-            <button className="text-sm font-semibold text-slate-600 hover:text-slate-950" onClick={() => setDetailsUser(user)}>Voir</button>
-            <button className="text-sm font-semibold text-blue-600 hover:text-blue-800" onClick={() => setFormUser(user)}>Modifier</button>
-            <button className="text-sm font-semibold text-indigo-600 hover:text-indigo-800" onClick={() => setAssignTarget(user)}>Roles</button>
-            <button
-              className="text-sm font-semibold text-amber-600 hover:text-amber-800"
+            <ActionIconButton className="text-[#7C3AED] hover:text-indigo-800" label="Assigner les roles" onClick={() => setAssignTarget(user)}>
+              <RolesIcon />
+            </ActionIconButton>
+            <ActionIconButton className="text-[#6B7280] hover:text-[#1F2937]" label="Voir les details" onClick={() => setDetailsUser(user)}>
+              <EyeIcon />
+            </ActionIconButton>
+            <ActionIconButton className="text-blue-600 hover:text-[#1D4ED8]" label="Modifier l'utilisateur" onClick={() => setFormUser(user)}>
+              <EditIcon />
+            </ActionIconButton>
+            <ActionIconButton
+              className="text-amber-600 hover:text-[#92400E]"
+              label={user.statut === "actif" ? "Desactiver l'utilisateur" : "Activer l'utilisateur"}
               onClick={() => (user.statut === "actif" ? deactivateUser.mutate(user.id, { onSuccess: () => notifySuccess("Utilisateur desactive."), onError: notifyError }) : activateUser.mutate(user.id, { onSuccess: () => notifySuccess("Utilisateur active."), onError: notifyError }))}
             >
-              {user.statut === "actif" ? "Desactiver" : "Activer"}
-            </button>
-            <button className="text-sm font-semibold text-rose-600 hover:text-rose-800" onClick={() => setDeleteTarget(user)}>Supprimer</button>
+              <ToggleIcon active={user.statut === "actif"} />
+            </ActionIconButton>
+            <ActionIconButton className="text-[#DC2626] hover:text-[#B91C1C]" label="Supprimer l'utilisateur" onClick={() => setDeleteTarget(user)}>
+              <TrashIcon />
+            </ActionIconButton>
           </div>
         )}
       />

@@ -77,6 +77,39 @@ export function useSubmitBudget() {
   });
 }
 
+export function useValidateBudgetByManager() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => budgetService.validateByGestionnaire(id),
+    onSuccess: (budget) => {
+      void queryClient.invalidateQueries({ queryKey: ["budgets"] });
+      void queryClient.invalidateQueries({ queryKey: ["budgets", budget.id] });
+    },
+  });
+}
+
+export function useRejectBudgetByManager() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => budgetService.rejectByGestionnaire(id),
+    onSuccess: (budget) => {
+      void queryClient.invalidateQueries({ queryKey: ["budgets"] });
+      void queryClient.invalidateQueries({ queryKey: ["budgets", budget.id] });
+    },
+  });
+}
+
+export function useSubmitBudgetToAdmin() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => budgetService.submitToAdmin(id),
+    onSuccess: (budget) => {
+      void queryClient.invalidateQueries({ queryKey: ["budgets"] });
+      void queryClient.invalidateQueries({ queryKey: ["budgets", budget.id] });
+    },
+  });
+}
+
 export function useCreateBudgetWithLines() {
   const queryClient = useQueryClient();
 
@@ -98,6 +131,37 @@ export function useCreateBudgetWithLines() {
       }
 
       return budgetService.submitBudget(budget.id);
+    },
+    onSuccess: (budget) => {
+      void queryClient.invalidateQueries({ queryKey: ["budgets"] });
+      void queryClient.invalidateQueries({ queryKey: ["budgets", "departement"] });
+      void queryClient.invalidateQueries({ queryKey: ["budgets", budget.id] });
+      void queryClient.invalidateQueries({ queryKey: ["lignes-budgetaires", budget.id] });
+    },
+  });
+}
+
+export function useSaveBudgetDraftWithLines() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: CreateBudgetWithLinesPayload): Promise<Budget> => {
+      const { lignes, ...budgetPayload } = payload;
+      const budget = await budgetService.createBudget(budgetPayload);
+
+      for (const line of lignes) {
+        const linePayload: LigneBudgetaireCreate = {
+          libelle: line.libelle,
+          description: line.description,
+          montant_prevu: line.montant_prevu,
+          type_ligne: line.type_ligne,
+          categorie_id: line.categorie_id,
+          budget_id: budget.id,
+        };
+        await ligneBudgetaireService.createLigneBudgetaire(linePayload);
+      }
+
+      return budget;
     },
     onSuccess: (budget) => {
       void queryClient.invalidateQueries({ queryKey: ["budgets"] });

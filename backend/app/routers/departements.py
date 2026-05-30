@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.models.user import User
+from app.routers.auth import get_current_user
 from app.schemas.departement import DepartementCreate, DepartementResponse, DepartementUpdate
 from app.schemas.user import UserSimpleResponse
 from app.services import departement_service
@@ -39,15 +41,55 @@ def get_gestionnaires_by_departement(departement_id: int, db: Session = Depends(
     return departement_service.get_gestionnaires_by_departement(db, departement_id)
 
 
+@router.get("/{departement_id}/chefs-projet", response_model=list[UserSimpleResponse])
+def get_chefs_projet_by_departement(departement_id: int, db: Session = Depends(get_db)):
+    return departement_service.get_chefs_projet_by_departement(db, departement_id)
+
+
 @router.get("/gestionnaires/available", response_model=list[UserSimpleResponse])
 def get_available_gestionnaires(departement_id: int | None = None, db: Session = Depends(get_db)):
     return departement_service.get_available_gestionnaires(db, departement_id)
+
+
+@router.get("/chefs-projet/available", response_model=list[UserSimpleResponse])
+def get_available_chefs_projet(departement_id: int | None = None, db: Session = Depends(get_db)):
+    return departement_service.get_available_chefs_projet(db, departement_id)
 
 
 @router.patch("/{departement_id}/assign-gestionnaire/{user_id}", response_model=UserSimpleResponse)
 def assign_gestionnaire_to_departement(departement_id: int, user_id: int, db: Session = Depends(get_db)):
     try:
         return departement_service.assign_gestionnaire_to_departement(db, departement_id, user_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+
+@router.patch("/{departement_id}/assign-chef-projet/{user_id}", response_model=UserSimpleResponse)
+def assign_chef_projet_to_departement(
+    departement_id: int,
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    try:
+        return departement_service.assign_chef_projet_to_departement(db, departement_id, user_id, current_user)
+    except PermissionError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+
+@router.patch("/{departement_id}/remove-chef-projet/{user_id}", response_model=UserSimpleResponse)
+def remove_chef_projet_from_departement(
+    departement_id: int,
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    try:
+        return departement_service.remove_chef_projet_from_departement(db, departement_id, user_id, current_user)
+    except PermissionError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 

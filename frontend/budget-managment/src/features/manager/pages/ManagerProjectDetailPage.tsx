@@ -9,16 +9,16 @@ import { useProject, useValidateProject, useRejectProject } from "../hooks/useMa
 
 function AccessMessage({ title, message }: { title: string; message: string }) {
   return (
-    <main className="grid min-h-screen place-items-center bg-slate-100 p-6">
-      <div className="max-w-lg rounded-lg bg-white p-6 text-left shadow-sm ring-1 ring-slate-200">
-        <h1 className="text-xl font-bold text-slate-950">{title}</h1>
-        <p className="mt-2 text-sm text-slate-600">{message}</p>
+    <main className="grid min-h-screen place-items-center bg-[#F4F7FA] p-6">
+      <div className="max-w-lg rounded-lg bg-white p-6 text-left shadow-sm ring-1 ring-[#E5E7EB]">
+        <h1 className="text-xl font-bold text-[#1F2937]">{title}</h1>
+        <p className="mt-2 text-sm text-[#6B7280]">{message}</p>
       </div>
     </main>
   );
 }
 
-export function ManagerProjectDetailPage() {
+export function ManagerProjectDetailPage({ readOnly = false }: { readOnly?: boolean }) {
   const { authLoading, isAuthenticated, isManager } = useAuth();
   const { id } = useParams<{ id: string }>();
   const projectId = id ? parseInt(id, 10) : undefined;
@@ -30,7 +30,7 @@ export function ManagerProjectDetailPage() {
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
 
   if (authLoading) {
-    return <main className="grid min-h-screen place-items-center bg-slate-100 text-sm font-semibold text-slate-600">Verification de la session...</main>;
+    return <main className="grid min-h-screen place-items-center bg-[#F4F7FA] text-sm font-semibold text-[#6B7280]">Verification de la session...</main>;
   }
   if (!isAuthenticated) {
     return <AccessMessage message="Vous devez etre connecte pour acceder a cette page." title="Connexion requise" />;
@@ -41,11 +41,11 @@ export function ManagerProjectDetailPage() {
 
   if (projectQuery.isLoading) {
     return (
-      <main className="min-h-screen bg-slate-100 lg:flex">
+      <main className="min-h-screen bg-[#F4F7FA] lg:flex">
         <ManagerSidebar />
         <div className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8">
           <div className="grid min-h-96 place-items-center">
-            <p className="text-sm font-semibold text-slate-600">Chargement du projet...</p>
+            <p className="text-sm font-semibold text-[#6B7280]">Chargement du projet...</p>
           </div>
         </div>
       </main>
@@ -76,77 +76,78 @@ export function ManagerProjectDetailPage() {
     }
   };
 
-  const canValidate = project.statut === "soumis";
-  const canReject = ["soumis", "approuve"].includes(project.statut);
+  const canValidate = !readOnly && project.statut === "soumis";
+  const canReject = !readOnly && ["soumis", "approuve"].includes(project.statut);
+  const backPath = readOnly ? "/manager/analyse-budgetaire" : "/manager/projects";
 
   return (
-    <main className="min-h-screen bg-slate-100 lg:flex">
+    <main className="min-h-screen bg-[#F4F7FA] lg:flex">
       <ManagerSidebar />
       <div className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto grid max-w-5xl gap-6">
           <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
             <Link
-              to="/manager/projects"
-              className="text-sm font-semibold text-emerald-600 hover:text-emerald-700 hover:underline"
+              to={backPath}
+              className="text-sm font-semibold text-[#16A34A] hover:text-[#166F48] hover:underline"
             >
               ← Retour à la liste
             </Link>
           </div>
 
-          <section className="rounded-lg bg-white p-6 shadow-sm ring-1 ring-slate-200">
+          <section className="rounded-lg bg-white p-6 shadow-sm ring-1 ring-[#E5E7EB]">
             <div className="mb-6 flex items-start justify-between">
               <div>
                 <div className="flex items-center gap-3">
-                  <h1 className="text-3xl font-bold text-slate-950">{project.titre}</h1>
+                  <h1 className="text-3xl font-bold text-[#1F2937]">{project.titre}</h1>
                   <ProjectStatusBadge status={project.statut} />
                 </div>
-                <p className="mt-2 text-sm text-slate-600">{project.code}</p>
+                <p className="mt-2 text-sm text-[#6B7280]">{project.code}</p>
               </div>
             </div>
 
             <div className="grid gap-6 md:grid-cols-2">
               <div>
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Description</h3>
-                <p className="mt-2 text-slate-950">{project.description || "Aucune description"}</p>
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-[#6B7280]">Description</h3>
+                <p className="mt-2 text-[#1F2937]">{project.description || "Aucune description"}</p>
               </div>
 
               <div>
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Résultat attendu</h3>
-                <p className="mt-2 text-slate-950">{project.resultat_attendu || "Aucun résultat attendu défini"}</p>
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-[#6B7280]">Résultat attendu</h3>
+                <p className="mt-2 text-[#1F2937]">{project.resultat_attendu || "Aucun résultat attendu défini"}</p>
               </div>
 
               <div>
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Chef de projet</h3>
-                <p className="mt-2 text-slate-950">
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-[#6B7280]">Chef de projet</h3>
+                <p className="mt-2 text-[#1F2937]">
                   {project.chef_projet ? `${project.chef_projet.prenom} ${project.chef_projet.nom}` : "Non assigné"}
                 </p>
-                {project.chef_projet && <p className="text-xs text-slate-600">{project.chef_projet.email}</p>}
+                {project.chef_projet && <p className="text-xs text-[#6B7280]">{project.chef_projet.email}</p>}
               </div>
 
               <div>
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Département</h3>
-                <p className="mt-2 text-slate-950">{project.departement?.nom || "Non spécifié"}</p>
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-[#6B7280]">Département</h3>
+                <p className="mt-2 text-[#1F2937]">{project.departement?.nom || "Non spécifié"}</p>
               </div>
 
               <div>
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Coût estimé</h3>
-                <p className="mt-2 text-2xl font-bold text-slate-950">
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-[#6B7280]">Coût estimé</h3>
+                <p className="mt-2 text-2xl font-bold text-[#1F2937]">
                   {project.cout_estime.toLocaleString("fr-FR")} €
                 </p>
               </div>
 
               {project.budget_realise_total !== undefined && (
                 <div>
-                  <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Budget réalisé</h3>
-                  <p className="mt-2 text-2xl font-bold text-slate-950">
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-[#6B7280]">Budget réalisé</h3>
+                  <p className="mt-2 text-2xl font-bold text-[#1F2937]">
                     {project.budget_realise_total.toLocaleString("fr-FR")} €
                   </p>
                 </div>
               )}
 
               <div>
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Date de début prévue</h3>
-                <p className="mt-2 text-slate-950">
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-[#6B7280]">Date de début prévue</h3>
+                <p className="mt-2 text-[#1F2937]">
                   {project.date_debut_prevue
                     ? new Date(project.date_debut_prevue).toLocaleDateString("fr-FR")
                     : "Non spécifiée"}
@@ -154,8 +155,8 @@ export function ManagerProjectDetailPage() {
               </div>
 
               <div>
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Date de fin prévue</h3>
-                <p className="mt-2 text-slate-950">
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-[#6B7280]">Date de fin prévue</h3>
+                <p className="mt-2 text-[#1F2937]">
                   {project.date_fin_prevue
                     ? new Date(project.date_fin_prevue).toLocaleDateString("fr-FR")
                     : "Non spécifiée"}
@@ -165,12 +166,12 @@ export function ManagerProjectDetailPage() {
           </section>
 
           {(canValidate || canReject) && (
-            <section className="rounded-lg bg-white p-6 shadow-sm ring-1 ring-slate-200">
-              <h3 className="mb-4 text-lg font-bold text-slate-950">Actions</h3>
+            <section className="rounded-lg bg-white p-6 shadow-sm ring-1 ring-[#E5E7EB]">
+              <h3 className="mb-4 text-lg font-bold text-[#1F2937]">Actions</h3>
               <div className="flex flex-wrap gap-3">
                 {canValidate && (
                   <button
-                    className="rounded-md bg-emerald-600 px-6 py-2 font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                    className="btn-success rounded-md px-6 py-2 font-semibold text-white hover:bg-[#15803D] disabled:opacity-50"
                     onClick={() => setIsValidateModalOpen(true)}
                     disabled={validateMutation.isPending}
                   >
@@ -179,7 +180,7 @@ export function ManagerProjectDetailPage() {
                 )}
                 {canReject && (
                   <button
-                    className="rounded-md bg-red-600 px-6 py-2 font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+                    className="btn-danger rounded-md px-6 py-2 font-semibold text-white hover:bg-red-700 disabled:opacity-50"
                     onClick={() => setIsRejectModalOpen(true)}
                     disabled={rejectMutation.isPending}
                   >

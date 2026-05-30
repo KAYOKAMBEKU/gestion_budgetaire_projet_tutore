@@ -15,6 +15,9 @@ class Budget(Base):
     description = Column(Text, nullable=True)
     montant_total_prevu = Column(Numeric(15, 2), default=0)
     montant_total_realise = Column(Numeric(15, 2), default=0)
+    total_recettes_realisees = Column(Numeric(15, 2), default=0)
+    total_depenses_realisees = Column(Numeric(15, 2), default=0)
+    taux_execution_budgetaire = Column(Numeric(10, 2), default=0)
     ecart_total = Column(Numeric(15, 2), default=0)
     statut = Column(String(50), default="brouillon")
     date_creation = Column(DateTime, default=datetime.utcnow)
@@ -40,6 +43,11 @@ class Budget(Base):
     )
     rapports = relationship(
         "RapportBudgetaire",
+        back_populates="budget",
+        cascade="all, delete-orphan",
+    )
+    mouvements_financiers = relationship(
+        "MouvementFinancier",
         back_populates="budget",
         cascade="all, delete-orphan",
     )

@@ -9,6 +9,11 @@ export interface User {
   email: string;
   statut: UserStatus;
   date_creation?: string;
+  departement_id?: number | null;
+  departement?: {
+    id: number;
+    nom: string;
+  } | null;
   roles?: Role[];
 }
 

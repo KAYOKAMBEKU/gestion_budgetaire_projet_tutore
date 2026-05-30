@@ -3,7 +3,6 @@ from decimal import Decimal
 from sqlalchemy.orm import Session
 
 from app.models.ligne_budgetaire import LigneBudgetaire
-from app.models.realisation import Realisation
 from app.schemas.ligne_budgetaire import LigneBudgetaireCreate, LigneBudgetaireUpdate
 from app.services._utils import decimal_sum, schema_to_dict, update_model, validate_non_negative
 
@@ -98,12 +97,14 @@ def recalculate_ligne(db: Session, ligne_id: int):
     ligne = get_ligne_by_id(db, ligne_id)
     if ligne is None:
         return None
-    # Seules les realisations validees alimentent le realise de la ligne.
-    validated = db.query(Realisation).filter(
-        Realisation.ligne_budgetaire_id == ligne_id,
-        Realisation.statut == "validee",
+    # En execution, les mouvements financiers comptables sont la source du realise.
+    from app.models.mouvement_financier import MouvementFinancier
+
+    sorties = db.query(MouvementFinancier).filter(
+        MouvementFinancier.ligne_budgetaire_id == ligne_id,
+        MouvementFinancier.type_mouvement == "sortie",
     ).all()
-    ligne.montant_realise = decimal_sum(realisation.montant_realise for realisation in validated)
+    ligne.montant_realise = decimal_sum(mouvement.montant for mouvement in sorties)
     ligne.ecart_montant = Decimal(ligne.montant_realise or 0) - Decimal(ligne.montant_prevu or 0)
     if Decimal(ligne.montant_prevu or 0) > 0:
         ligne.ecart_pourcentage = (ligne.ecart_montant / Decimal(ligne.montant_prevu)) * Decimal("100")

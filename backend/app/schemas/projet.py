@@ -25,6 +25,7 @@ class ProjetBase(BaseModel):
 
 
 class ProjetCreate(ProjetBase):
+    code: Optional[str] = Field(None, max_length=100)
     departement_id: int
     exercice_id: int
 

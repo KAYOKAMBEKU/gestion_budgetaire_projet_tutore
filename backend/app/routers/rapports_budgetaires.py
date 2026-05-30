@@ -1,7 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.models.user import User
+from app.routers.auth import get_current_user
 from app.schemas.rapport_budgetaire import RapportBudgetaireCreate, RapportBudgetaireResponse, RapportBudgetaireUpdate
 from app.services import rapport_budgetaire_service
 
@@ -10,6 +12,15 @@ router = APIRouter(prefix="/rapports-budgetaires", tags=["Rapports budgetaires"]
 
 def _not_found():
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rapport budgetaire introuvable")
+
+
+def _is_admin(user: User) -> bool:
+    return any((role.nom_role or "").strip().lower() == "administrateur" for role in user.roles)
+
+
+def _require_admin(user: User) -> None:
+    if not _is_admin(user):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Seul l'Administrateur peut exporter les rapports budgetaires.")
 
 
 @router.post("/", response_model=RapportBudgetaireResponse, status_code=status.HTTP_201_CREATED)
@@ -38,6 +49,27 @@ def generate_budget_summary(budget_id: int, db: Session = Depends(get_db)):
     if summary is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Budget introuvable")
     return summary
+
+
+@router.get("/export-pdf")
+def export_admin_budget_report_pdf(
+    type_rapport: str = "general",
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_admin(current_user)
+    try:
+        filename, content = rapport_budgetaire_service.generate_admin_budget_report_pdf(db, type_rapport)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    return Response(
+        content=content,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Content-Length": str(len(content)),
+        },
+    )
 
 
 @router.get("/{rapport_id}", response_model=RapportBudgetaireResponse)

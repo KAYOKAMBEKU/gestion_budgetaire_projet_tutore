@@ -33,3 +33,8 @@ class Projet(Base):
     created_by = relationship("User", back_populates="projets_crees", foreign_keys=[created_by_id])
     chef_projet = relationship("User", back_populates="projets_geres", foreign_keys=[chef_projet_id])
     budget = relationship("Budget", back_populates="projet", uselist=False)
+    mouvements_financiers = relationship(
+        "MouvementFinancier",
+        back_populates="projet",
+        cascade="all, delete-orphan",
+    )

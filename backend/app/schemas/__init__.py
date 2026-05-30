@@ -54,6 +54,16 @@ from .ligne_budgetaire import (
     LigneBudgetaireSimpleResponse,
     LigneBudgetaireUpdate,
 )
+from .mouvement_financier import (
+    AnalyseEcartsBudget,
+    ExecutionBudgetaireResponse,
+    LigneExecutionBudgetaire,
+    MouvementFinancierBase,
+    MouvementFinancierCreate,
+    MouvementFinancierResponse,
+    MouvementFinancierUpdate,
+    SyntheseFinanciereProjet,
+)
 from .notification import (
     NotificationBase,
     NotificationCreate,

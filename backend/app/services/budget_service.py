@@ -9,10 +9,26 @@ from app.models.user import User
 from app.schemas.budget import BudgetCreate, BudgetUpdate
 from app.services._utils import decimal_sum, require_unique, schema_to_dict, update_model
 
-VALID_STATUTS = {"brouillon", "soumis", "valide", "rejete", "en_execution", "cloture"}
+VALID_STATUTS = {
+    "brouillon",
+    "soumis",
+    "soumis_gestionnaire",
+    "valide",
+    "valide_gestionnaire",
+    "soumis_admin",
+    "approuve_admin",
+    "en_execution",
+    "execute",
+    "cloture",
+    "rejete",
+    "rejete_gestionnaire",
+    "rejete_admin",
+}
 ROLE_CHEF_PROJET = "chef de projet"
 ROLE_GESTIONNAIRE = "gestionnaire"
+ROLE_ADMIN = "administrateur"
 STATUS_EXERCICE_OUVERT = "ouvert"
+FINAL_STATUSES = {"execute", "cloture"}
 
 
 def _has_role(user: User | None, role_name: str) -> bool:
@@ -25,6 +41,22 @@ def _is_gestionnaire(user: User | None) -> bool:
     if user is None:
         return False
     return any(ROLE_GESTIONNAIRE in (role.nom_role or "").strip().lower() for role in user.roles)
+
+
+def _is_admin(user: User | None) -> bool:
+    if user is None:
+        return False
+    return any((role.nom_role or "").strip().lower() == ROLE_ADMIN for role in user.roles)
+
+
+def _require_admin(user: User | None) -> None:
+    if not _is_admin(user):
+        raise PermissionError("Seul l'Administrateur peut effectuer cette action sur l'execution du budget.")
+
+
+def _require_gestionnaire(user: User | None) -> None:
+    if not _is_gestionnaire(user):
+        raise PermissionError("Seul le Gestionnaire peut valider un budget avant soumission a l'Administrateur.")
 
 
 def _get_active_exercice(db: Session):
@@ -125,6 +157,8 @@ def update_budget(db: Session, budget_id: int, budget_in: BudgetUpdate):
     budget = get_budget_by_id(db, budget_id)
     if budget is None:
         return None
+    if budget.statut in FINAL_STATUSES:
+        raise ValueError("Un budget execute ou cloture ne peut plus etre modifie librement.")
     data = schema_to_dict(budget_in)
     if "reference" in data:
         existing = get_budget_by_reference(db, data["reference"])
@@ -160,6 +194,8 @@ def delete_budget(db: Session, budget_id: int):
     budget = get_budget_by_id(db, budget_id)
     if budget is None:
         return None
+    if budget.statut in FINAL_STATUSES:
+        raise ValueError("Un budget execute ou cloture ne peut plus etre supprime librement.")
     db.delete(budget)
     db.commit()
     return budget
@@ -182,29 +218,102 @@ def _transition_budget(db: Session, budget_id: int, allowed: set[str], target: s
 
 
 def submit_budget(db: Session, budget_id: int):
-    return _transition_budget(db, budget_id, {"brouillon"}, "soumis")
+    return _transition_budget(db, budget_id, {"brouillon"}, "soumis_gestionnaire")
 
 
-def approve_budget(db: Session, budget_id: int):
-    return _transition_budget(db, budget_id, {"soumis"}, "valide")
+def validate_by_gestionnaire(db: Session, budget_id: int, current_user: User | None):
+    _require_gestionnaire(current_user)
+    return _transition_budget(db, budget_id, {"soumis", "soumis_gestionnaire"}, "valide_gestionnaire")
+
+
+def reject_by_gestionnaire(db: Session, budget_id: int, current_user: User | None):
+    _require_gestionnaire(current_user)
+    return _transition_budget(db, budget_id, {"soumis", "soumis_gestionnaire"}, "rejete_gestionnaire")
+
+
+def submit_to_admin(db: Session, budget_id: int, current_user: User | None):
+    _require_gestionnaire(current_user)
+    return _transition_budget(db, budget_id, {"valide_gestionnaire"}, "soumis_admin")
+
+
+def approve_budget(db: Session, budget_id: int, current_user: User | None = None):
+    if current_user is not None:
+        _require_admin(current_user)
+    return _transition_budget(
+        db,
+        budget_id,
+        {"soumis", "valide", "soumis_admin"},
+        "approuve_admin",
+    )
 
 
 def reject_budget(db: Session, budget_id: int):
-    return _transition_budget(db, budget_id, {"soumis"}, "rejete")
+    return _transition_budget(db, budget_id, {"soumis", "soumis_gestionnaire", "soumis_admin"}, "rejete_admin")
 
 
 def close_budget(db: Session, budget_id: int):
-    return _transition_budget(db, budget_id, {"valide", "en_execution"}, "cloture")
+    return _transition_budget(db, budget_id, {"approuve_admin", "valide", "en_execution"}, "cloture")
+
+
+def start_execution(db: Session, budget_id: int, current_user: User | None):
+    _require_admin(current_user)
+    return _transition_budget(db, budget_id, {"approuve_admin", "valide"}, "en_execution")
+
+
+def close_execution(db: Session, budget_id: int, current_user: User | None):
+    _require_admin(current_user)
+    budget = get_budget_by_id(db, budget_id)
+    if budget is None:
+        return None
+    if budget.statut != "en_execution":
+        raise ValueError("Seul un budget en execution peut etre cloture.")
+    recalculate_budget_totals(db, budget_id)
+    budget = get_budget_by_id(db, budget_id)
+    budget.statut = "execute"
+    db.commit()
+    db.refresh(budget)
+    return budget
 
 
 def recalculate_budget_totals(db: Session, budget_id: int):
     budget = get_budget_by_id(db, budget_id)
     if budget is None:
         return None
-    # Recalcul des totaux depuis les lignes budgetaires.
+    # L'execution budgetaire est calculee depuis les mouvements financiers comptables.
+    from app.models.mouvement_financier import MouvementFinancier
+
+    mouvements = db.query(MouvementFinancier).filter(MouvementFinancier.budget_id == budget_id).all()
+    for ligne in budget.lignes_budgetaires:
+        if ligne.type_ligne == "depense":
+            ligne.montant_realise = decimal_sum(
+                mouvement.montant
+                for mouvement in mouvements
+                if mouvement.type_mouvement == "sortie" and mouvement.ligne_budgetaire_id == ligne.id
+            )
+        else:
+            ligne.montant_realise = Decimal("0")
+        ligne.ecart_montant = Decimal(ligne.montant_realise or 0) - Decimal(ligne.montant_prevu or 0)
+        if Decimal(ligne.montant_prevu or 0) > 0:
+            ligne.ecart_pourcentage = (ligne.ecart_montant / Decimal(ligne.montant_prevu)) * Decimal("100")
+        else:
+            ligne.ecart_pourcentage = Decimal("0")
+
+    total_recettes = decimal_sum(mouvement.montant for mouvement in mouvements if mouvement.type_mouvement == "entree")
+    total_depenses = decimal_sum(mouvement.montant for mouvement in mouvements if mouvement.type_mouvement == "sortie")
+    total_depenses_prevues = decimal_sum(
+        ligne.montant_prevu for ligne in budget.lignes_budgetaires if ligne.type_ligne == "depense"
+    )
     budget.montant_total_prevu = decimal_sum(ligne.montant_prevu for ligne in budget.lignes_budgetaires)
-    budget.montant_total_realise = decimal_sum(ligne.montant_realise for ligne in budget.lignes_budgetaires)
-    budget.ecart_total = budget.montant_total_realise - budget.montant_total_prevu
+    budget.total_recettes_realisees = total_recettes
+    budget.total_depenses_realisees = total_depenses
+    budget.montant_total_realise = total_depenses
+    budget.ecart_total = total_depenses - total_depenses_prevues
+    if total_depenses_prevues > 0:
+        budget.taux_execution_budgetaire = (total_depenses / total_depenses_prevues) * Decimal("100")
+    else:
+        budget.taux_execution_budgetaire = Decimal("0")
+    if budget.projet is not None:
+        budget.projet.budget_realise_total = total_depenses
     db.commit()
     db.refresh(budget)
     return budget

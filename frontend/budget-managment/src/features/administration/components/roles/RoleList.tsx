@@ -6,6 +6,7 @@ import { showToast } from "../../../../store/slices/uiSlice";
 import type { Role, RoleCreate, RoleUpdate } from "../../../../types/role";
 import { usePermissions } from "../../hooks/usePermissions";
 import { useAssignPermissionsToRole, useCreateRole, useDeleteRole, useRoles, useUpdateRole } from "../../hooks/useRoles";
+import { ActionIconButton, EditIcon, PermissionsIcon, TrashIcon } from "../ActionIconButton";
 import { ConfirmModal } from "../ConfirmModal";
 import { DataTable, type DataTableColumn } from "../DataTable";
 import { InlineError, LoadingState, SectionHeader } from "../SectionHeader";
@@ -43,7 +44,7 @@ export function RoleList() {
   }
 
   const columns: DataTableColumn<Role>[] = [
-    { key: "role", label: "Role", render: (role) => <div><p className="font-semibold text-slate-950">{role.nom_role}</p><p className="text-xs text-slate-500">{role.description || "Sans description"}</p></div> },
+    { key: "role", label: "Role", render: (role) => <div><p className="font-semibold text-[#1F2937]">{role.nom_role}</p><p className="text-xs text-[#6B7280]">{role.description || "Sans description"}</p></div> },
     { key: "permissions", label: "Permissions", render: (role) => role.permissions?.map((permission) => permission.code).join(", ") || "Aucune permission" },
   ];
 
@@ -68,9 +69,15 @@ export function RoleList() {
         getRowKey={(role) => role.id}
         actions={(role) => (
           <div className="flex flex-wrap justify-end gap-2">
-            <button className="text-sm font-semibold text-blue-600 hover:text-blue-800" onClick={() => setFormRole(role)}>Modifier</button>
-            <button className="text-sm font-semibold text-indigo-600 hover:text-indigo-800" onClick={() => setAssignTarget(role)}>Permissions</button>
-            <button className="text-sm font-semibold text-rose-600 hover:text-rose-800" onClick={() => setDeleteTarget(role)}>Supprimer</button>
+            <ActionIconButton className="text-[#7C3AED] hover:text-indigo-800" label="Assigner les permissions" onClick={() => setAssignTarget(role)}>
+              <PermissionsIcon />
+            </ActionIconButton>
+            <ActionIconButton className="text-blue-600 hover:text-[#1D4ED8]" label="Modifier le role" onClick={() => setFormRole(role)}>
+              <EditIcon />
+            </ActionIconButton>
+            <ActionIconButton className="text-[#DC2626] hover:text-[#B91C1C]" label="Supprimer le role" onClick={() => setDeleteTarget(role)}>
+              <TrashIcon />
+            </ActionIconButton>
           </div>
         )}
       />

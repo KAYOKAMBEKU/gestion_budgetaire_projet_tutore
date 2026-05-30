@@ -59,7 +59,7 @@ export function ExerciceBudgetaireForm({ exercice, loading, onCancel, onSubmit }
             <input className={inputClass} required type="date" value={dateFin} onChange={(event) => setDateFin(event.target.value)} />
           </label>
         </div>
-        {dateError ? <p className="rounded-md bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700">{dateError}</p> : null}
+        {dateError ? <p className="rounded-md bg-[#FEE2E2] px-3 py-2 text-sm font-medium text-[#DC2626]">{dateError}</p> : null}
       </FormShell>
     </form>
   );

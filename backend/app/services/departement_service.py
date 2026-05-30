@@ -86,6 +86,11 @@ def get_gestionnaires_by_departement(db: Session, departement_id: int):
     return db.query(User).filter(User.departement_id == departement_id).all()
 
 
+def get_chefs_projet_by_departement(db: Session, departement_id: int):
+    users = db.query(User).filter(User.departement_id == departement_id).all()
+    return [user for user in users if _has_project_manager_role(user)]
+
+
 def get_available_gestionnaires(db: Session, departement_id: int | None = None):
     query = db.query(User)
     if departement_id is not None:
@@ -96,6 +101,16 @@ def get_available_gestionnaires(db: Session, departement_id: int | None = None):
     return [user for user in candidates if _has_manager_role(user)]
 
 
+def get_available_chefs_projet(db: Session, departement_id: int | None = None):
+    query = db.query(User)
+    if departement_id is not None:
+        query = query.filter((User.departement_id.is_(None)) | (User.departement_id == departement_id))
+    else:
+        query = query.filter(User.departement_id.is_(None))
+    candidates = query.all()
+    return [user for user in candidates if _has_project_manager_role(user)]
+
+
 def _has_manager_role(user: User) -> bool:
     if user is None:
         return False
@@ -104,6 +119,19 @@ def _has_manager_role(user: User) -> bool:
         if "gestionnaire" in name or "manager" in name or "budget manager" in name:
             return True
     return False
+
+
+def _has_project_manager_role(user: User) -> bool:
+    if user is None:
+        return False
+    return any((role.nom_role or "").strip().lower() == "chef de projet" for role in user.roles)
+
+
+def _ensure_manager_can_manage_department(current_user: User | None, departement_id: int) -> None:
+    if current_user is None or not _has_manager_role(current_user):
+        raise PermissionError("Seul un Gestionnaire peut affecter un Chef de projet a son departement.")
+    if current_user.departement_id != departement_id:
+        raise PermissionError("Le Gestionnaire ne peut gerer que son propre departement.")
 
 
 def assign_gestionnaire_to_departement(db: Session, departement_id: int, user_id: int):
@@ -119,6 +147,44 @@ def assign_gestionnaire_to_departement(db: Session, departement_id: int, user_id
         raise ValueError("Ce gestionnaire est deja affecte a un autre departement")
     user.departement_id = departement_id
     departement.responsable = f"{user.nom} {user.prenom or ''}".strip()
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def assign_chef_projet_to_departement(db: Session, departement_id: int, user_id: int, current_user: User | None = None):
+    if current_user is not None:
+        _ensure_manager_can_manage_department(current_user, departement_id)
+    departement = get_departement_by_id(db, departement_id)
+    if departement is None:
+        raise ValueError("Departement introuvable")
+    user = db.query(User).filter(User.id == user_id).first()
+    if user is None:
+        raise ValueError("Utilisateur introuvable")
+    if not _has_project_manager_role(user):
+        raise ValueError("Cet utilisateur n'a pas le role Chef de projet.")
+    if user.departement_id is not None and user.departement_id != departement_id:
+        raise ValueError("Ce Chef de projet est deja affecte a un autre departement")
+    user.departement_id = departement_id
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def remove_chef_projet_from_departement(db: Session, departement_id: int, user_id: int, current_user: User | None = None):
+    if current_user is not None:
+        _ensure_manager_can_manage_department(current_user, departement_id)
+    departement = get_departement_by_id(db, departement_id)
+    if departement is None:
+        raise ValueError("Departement introuvable")
+    user = db.query(User).filter(User.id == user_id).first()
+    if user is None:
+        raise ValueError("Utilisateur introuvable")
+    if not _has_project_manager_role(user):
+        raise ValueError("Cet utilisateur n'a pas le role Chef de projet.")
+    if user.departement_id != departement_id:
+        raise ValueError("Ce Chef de projet n'est pas affecte a ce departement")
+    user.departement_id = None
     db.commit()
     db.refresh(user)
     return user

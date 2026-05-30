@@ -7,6 +7,7 @@ from .departement import Departement
 from .ecart_budgetaire import EcartBudgetaire
 from .exercice_budgetaire import ExerciceBudgetaire
 from .ligne_budgetaire import LigneBudgetaire
+from .mouvement_financier import MouvementFinancier
 from .notification import Notification
 from .permission import Permission
 from .prevision import Prevision

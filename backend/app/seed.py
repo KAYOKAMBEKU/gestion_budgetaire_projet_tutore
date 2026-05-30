@@ -35,6 +35,10 @@ PERMISSIONS = [
     ("exercices:delete", "Supprimer les exercices budgetaires"),
     ("budgets:create", "Creer des budgets"),
     ("budgets:validate", "Valider des budgets"),
+    ("mouvements_financiers:create", "Creer des mouvements financiers"),
+    ("mouvements_financiers:read", "Lire les mouvements financiers"),
+    ("mouvements_financiers:update", "Modifier des mouvements financiers"),
+    ("mouvements_financiers:delete", "Supprimer des mouvements financiers"),
     ("reports:generate", "Generer des rapports"),
 ]
 
@@ -60,6 +64,7 @@ def get_or_create_permissions(db: Session) -> list[Permission]:
 
 def seed_admin(db: Session) -> None:
     permissions = get_or_create_permissions(db)
+    permissions_by_code = {permission.code: permission for permission in permissions}
     admin_role = db.query(Role).filter(Role.nom_role == "Administrateur").first()
     if admin_role is None:
         admin_role = Role(
@@ -107,6 +112,26 @@ def seed_admin(db: Session) -> None:
         )
         db.add(project_manager_role)
         db.flush()
+
+    comptable_role = db.query(Role).filter(Role.nom_role == "Comptable").first()
+    if comptable_role is None:
+        comptable_role = Role(
+            nom_role="Comptable",
+            description="Enregistrement et suivi des mouvements financiers reels des projets",
+        )
+        db.add(comptable_role)
+        db.flush()
+    comptable_permission_codes = {
+        "mouvements_financiers:create",
+        "mouvements_financiers:read",
+        "mouvements_financiers:update",
+        "mouvements_financiers:delete",
+    }
+    comptable_role.permissions = [
+        permissions_by_code[code]
+        for code in comptable_permission_codes
+        if code in permissions_by_code
+    ]
 
     finance = db.query(Departement).filter(Departement.nom == "Finance").first()
     if finance is None:

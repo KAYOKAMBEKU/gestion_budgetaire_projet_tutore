@@ -16,6 +16,9 @@ class BudgetBase(BaseModel):
     description: Optional[str] = None
     montant_total_prevu: Optional[Decimal] = Field(None, ge=0)
     montant_total_realise: Optional[Decimal] = Field(None, ge=0)
+    total_recettes_realisees: Optional[Decimal] = Field(None, ge=0)
+    total_depenses_realisees: Optional[Decimal] = Field(None, ge=0)
+    taux_execution_budgetaire: Optional[Decimal] = Field(None, ge=0)
     ecart_total: Optional[Decimal] = Field(None)
     statut: Optional[str] = Field("brouillon", max_length=50)
     model_config = ConfigDict(extra="forbid")
@@ -34,6 +37,9 @@ class BudgetUpdate(BaseModel):
     description: Optional[str] = None
     montant_total_prevu: Optional[Decimal] = Field(None, ge=0)
     montant_total_realise: Optional[Decimal] = Field(None, ge=0)
+    total_recettes_realisees: Optional[Decimal] = Field(None, ge=0)
+    total_depenses_realisees: Optional[Decimal] = Field(None, ge=0)
+    taux_execution_budgetaire: Optional[Decimal] = Field(None, ge=0)
     ecart_total: Optional[Decimal] = None
     statut: Optional[str] = Field(None, max_length=50)
     model_config = ConfigDict(extra="forbid")

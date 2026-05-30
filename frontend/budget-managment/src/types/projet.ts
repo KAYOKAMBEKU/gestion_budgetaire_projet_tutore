@@ -37,7 +37,7 @@ export interface Projet {
 }
 
 export interface ProjetCreate {
-  code: string;
+  code?: string;
   titre: string;
   description?: string;
   objectif?: string;

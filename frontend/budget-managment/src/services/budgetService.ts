@@ -26,12 +26,28 @@ export const budgetService = {
     const { data } = await apiClient.patch<Budget>(`/budgets/${id}/submit`);
     return data;
   },
+  async validateByGestionnaire(id: number): Promise<Budget> {
+    const { data } = await apiClient.patch<Budget>(`/budgets/${id}/validate-gestionnaire`);
+    return data;
+  },
+  async rejectByGestionnaire(id: number): Promise<Budget> {
+    const { data } = await apiClient.patch<Budget>(`/budgets/${id}/reject-gestionnaire`);
+    return data;
+  },
+  async submitToAdmin(id: number): Promise<Budget> {
+    const { data } = await apiClient.patch<Budget>(`/budgets/${id}/submit-admin`);
+    return data;
+  },
   async approveBudget(id: number): Promise<Budget> {
     const { data } = await apiClient.patch<Budget>(`/budgets/${id}/approve`);
     return data;
   },
   async rejectBudget(id: number): Promise<Budget> {
     const { data } = await apiClient.patch<Budget>(`/budgets/${id}/reject`);
+    return data;
+  },
+  async startExecution(id: number): Promise<Budget> {
+    const { data } = await apiClient.patch<Budget>(`/budgets/${id}/start-execution`);
     return data;
   },
 };

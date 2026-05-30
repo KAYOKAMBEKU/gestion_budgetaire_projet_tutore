@@ -28,6 +28,9 @@ export interface LigneBudgetaireCreate {
 export interface DraftBudgetLine {
   libelle: string;
   description?: string;
+  quantite?: number;
+  cout_unitaire?: number;
+  periode?: string;
   montant_prevu: number;
   type_ligne: TypeLigneBudgetaire;
   categorie_id: number;

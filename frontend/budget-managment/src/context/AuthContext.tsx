@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { getApiErrorMessage } from "../api/client";
 import { authService } from "../services/authService";
 import type { AuthUser } from "../types/auth";
+import { hasAnyUserRole, hasUserRole } from "../utils/authRoles";
 
 interface AuthContextValue {
   currentUser: AuthUser | null;
@@ -16,6 +17,7 @@ interface AuthContextValue {
   isManager: boolean;
   isBudgetManager: boolean;
   isProjectManager: boolean;
+  isComptable: boolean;
   login: (email: string, password: string) => Promise<AuthUser>;
   logout: () => void;
 }
@@ -23,7 +25,7 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 function enrichUserWithTemporaryDepartment(user: AuthUser): AuthUser {
-  const isManagerRole = user.roles.includes("Gestionnaire") || user.roles.includes("Gestionnaire Budgetaire");
+  const isManagerRole = hasAnyUserRole(user, ["Gestionnaire", "Gestionnaire Budgetaire"]);
   if (!isManagerRole || user.departement_id) {
     return user;
   }
@@ -67,8 +69,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setAuthLoading(false));
   }, []);
 
-  const isBudgetManager = currentUser?.roles.includes("Gestionnaire Budgetaire") ?? false;
-  const isProjectManager = currentUser?.roles.includes("Chef de projet") ?? false;
+  useEffect(() => {
+    function handleAuthExpired() {
+      setCurrentUser(null);
+      setAuthLoading(false);
+    }
+
+    window.addEventListener("budget:auth-expired", handleAuthExpired);
+    return () => window.removeEventListener("budget:auth-expired", handleAuthExpired);
+  }, []);
+
+  const isBudgetManager = hasUserRole(currentUser, "Gestionnaire Budgetaire");
+  const isProjectManager = hasUserRole(currentUser, "Chef de projet");
+  const isComptable = hasUserRole(currentUser, "Comptable");
 
   const value: AuthContextValue = useMemo(
     () => ({
@@ -78,11 +91,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       roles: currentUser?.roles ?? [],
       permissions: currentUser?.permissions ?? [],
       hasPermission: (permissionCode) => currentUser?.permissions.includes(permissionCode) ?? false,
-      hasRole: (roleName) => currentUser?.roles.includes(roleName) ?? false,
-      isAdmin: currentUser?.roles.includes("Administrateur") ?? false,
-      isManager: currentUser?.roles.includes("Gestionnaire") || currentUser?.roles.includes("Gestionnaire Budgetaire") || false,
+      hasRole: (roleName) => hasUserRole(currentUser, roleName),
+      isAdmin: hasUserRole(currentUser, "Administrateur"),
+      isManager: hasAnyUserRole(currentUser, ["Gestionnaire", "Gestionnaire Budgetaire"]),
       isBudgetManager,
       isProjectManager,
+      isComptable,
       async login(email: string, password: string) {
         try {
           const response = await authService.login(email, password);
@@ -101,7 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setCurrentUser(null);
       },
     }),
-    [authLoading, currentUser, isBudgetManager, isProjectManager],
+    [authLoading, currentUser, isBudgetManager, isComptable, isProjectManager],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

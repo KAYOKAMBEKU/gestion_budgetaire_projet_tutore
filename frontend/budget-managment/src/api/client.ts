@@ -16,6 +16,18 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error: unknown) => {
+    if (error instanceof AxiosError && error.response?.status === 401) {
+      localStorage.removeItem("budget_access_token");
+      localStorage.removeItem("budget_admin_user");
+      window.dispatchEvent(new Event("budget:auth-expired"));
+    }
+    return Promise.reject(error);
+  },
+);
+
 export function getApiErrorMessage(error: unknown): string {
   if (error instanceof AxiosError) {
     const data = error.response?.data as FastApiError | undefined;

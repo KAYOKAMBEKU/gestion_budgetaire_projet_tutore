@@ -12,6 +12,7 @@ import {
   useDepartements,
   useUpdateDepartement,
 } from "../../hooks/useDepartements";
+import { ActionIconButton, EditIcon, ToggleIcon, TrashIcon } from "../ActionIconButton";
 import { ConfirmModal } from "../ConfirmModal";
 import { DataTable, type DataTableColumn } from "../DataTable";
 import { InlineError, LoadingState, SectionHeader } from "../SectionHeader";
@@ -46,7 +47,7 @@ export function DepartementList() {
   }
 
   const columns: DataTableColumn<Departement>[] = [
-    { key: "nom", label: "Departement", render: (departement) => <div><p className="font-semibold text-slate-950">{departement.nom}</p><p className="text-xs text-slate-500">{departement.description || "Sans description"}</p></div> },
+    { key: "nom", label: "Departement", render: (departement) => <div><p className="font-semibold text-[#1F2937]">{departement.nom}</p><p className="text-xs text-[#6B7280]">{departement.description || "Sans description"}</p></div> },
     { key: "responsable", label: "Responsable", render: (departement) => departement.responsable || "Non renseigne" },
     { key: "statut", label: "Statut", render: (departement) => <StatusBadge status={departement.statut} /> },
   ];
@@ -72,14 +73,19 @@ export function DepartementList() {
         getRowKey={(departement) => departement.id}
         actions={(departement) => (
           <div className="flex flex-wrap justify-end gap-2">
-            <button className="text-sm font-semibold text-blue-600 hover:text-blue-800" onClick={() => setFormDepartement(departement)}>Modifier</button>
-            <button
-              className="text-sm font-semibold text-amber-600 hover:text-amber-800"
+            <ActionIconButton className="text-blue-600 hover:text-[#1D4ED8]" label="Modifier le departement" onClick={() => setFormDepartement(departement)}>
+              <EditIcon />
+            </ActionIconButton>
+            <ActionIconButton
+              className="text-amber-600 hover:text-[#92400E]"
+              label={departement.statut === "actif" ? "Desactiver le departement" : "Activer le departement"}
               onClick={() => (departement.statut === "actif" ? deactivateDepartement.mutate(departement.id, { onSuccess: () => notifySuccess("Departement desactive."), onError: notifyError }) : activateDepartement.mutate(departement.id, { onSuccess: () => notifySuccess("Departement active."), onError: notifyError }))}
             >
-              {departement.statut === "actif" ? "Desactiver" : "Activer"}
-            </button>
-            <button className="text-sm font-semibold text-rose-600 hover:text-rose-800" onClick={() => setDeleteTarget(departement)}>Supprimer</button>
+              <ToggleIcon active={departement.statut === "actif"} />
+            </ActionIconButton>
+            <ActionIconButton className="text-[#DC2626] hover:text-[#B91C1C]" label="Supprimer le departement" onClick={() => setDeleteTarget(departement)}>
+              <TrashIcon />
+            </ActionIconButton>
           </div>
         )}
       />

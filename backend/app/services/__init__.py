@@ -6,6 +6,7 @@ from . import departement_service
 from . import ecart_budgetaire_service
 from . import exercice_budgetaire_service
 from . import ligne_budgetaire_service
+from . import mouvement_financier_service
 from . import notification_service
 from . import permission_service
 from . import prevision_service
@@ -25,6 +26,7 @@ __all__ = [
     "ecart_budgetaire_service",
     "exercice_budgetaire_service",
     "ligne_budgetaire_service",
+    "mouvement_financier_service",
     "notification_service",
     "permission_service",
     "prevision_service",

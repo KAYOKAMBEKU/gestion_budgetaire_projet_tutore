@@ -8,24 +8,25 @@ interface BudgetLinesTableProps {
 
 export function BudgetLinesTable({ lines, onRemove }: BudgetLinesTableProps) {
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-5 text-left shadow-sm">
-      <h2 className="text-lg font-bold text-slate-950">Lignes budgetaires ajoutees</h2>
-      <div className="mt-4 overflow-hidden rounded-lg border border-slate-200">
+    <section className="rounded-lg border border-[#E5E7EB] bg-white p-5 text-left shadow-sm">
+      <h2 className="text-lg font-bold text-[#1F2937]">Lignes budgetaires ajoutees</h2>
+      <div className="mt-4 overflow-hidden border border-[#E5E7EB]">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+          <table className="min-w-full divide-y divide-[#E5E7EB] text-sm">
+            <thead className="bg-[#F9FAFB] text-left text-xs uppercase tracking-wide text-[#374151]">
               <tr>
                 <th className="px-4 py-3">Libelle</th>
                 <th className="px-4 py-3">Type</th>
                 <th className="px-4 py-3">Categorie</th>
+                <th className="px-4 py-3">Details</th>
                 <th className="px-4 py-3">Montant prevu</th>
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-[#E5E7EB]">
               {lines.length === 0 ? (
                 <tr>
-                  <td className="px-4 py-8 text-center text-slate-500" colSpan={5}>
+                  <td className="px-4 py-8 text-center text-[#6B7280]" colSpan={6}>
                     Aucune ligne ajoutee.
                   </td>
                 </tr>
@@ -33,14 +34,18 @@ export function BudgetLinesTable({ lines, onRemove }: BudgetLinesTableProps) {
                 lines.map((line, index) => (
                   <tr key={`${line.libelle}-${index}`}>
                     <td className="px-4 py-3">
-                      <p className="font-semibold text-slate-950">{line.libelle}</p>
-                      <p className="text-xs text-slate-500">{line.description || "Sans description"}</p>
+                      <p className="font-semibold text-[#1F2937]">{line.libelle}</p>
+                      <p className="text-xs text-[#6B7280]">{line.description || "Sans description"}</p>
                     </td>
-                    <td className="px-4 py-3 capitalize text-slate-700">{line.type_ligne}</td>
-                    <td className="px-4 py-3 text-slate-700">{line.categorie_nom}</td>
-                    <td className="px-4 py-3 font-semibold text-slate-950">{formatAmount(line.montant_prevu)}</td>
+                    <td className="px-4 py-3 capitalize text-[#6B7280]">{line.type_ligne}</td>
+                    <td className="px-4 py-3 text-[#6B7280]">{line.categorie_nom}</td>
+                    <td className="px-4 py-3 text-xs text-[#6B7280]">
+                      <p>{line.quantite && line.cout_unitaire ? `${line.quantite} x ${formatAmount(line.cout_unitaire)}` : "-"}</p>
+                      <p>{line.periode || ""}</p>
+                    </td>
+                    <td className="px-4 py-3 font-semibold text-[#1F2937]">{formatAmount(line.montant_prevu)}</td>
                     <td className="px-4 py-3 text-right">
-                      <button className="text-sm font-semibold text-rose-600 hover:text-rose-800" onClick={() => onRemove(index)} type="button">
+                      <button className="text-sm font-semibold text-[#DC2626] hover:text-[#B91C1C]" onClick={() => onRemove(index)} type="button">
                         Supprimer
                       </button>
                     </td>

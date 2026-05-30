@@ -56,3 +56,7 @@ class User(Base):
         back_populates="utilisateur",
         cascade="all, delete-orphan",
     )
+    mouvements_financiers = relationship(
+        "MouvementFinancier",
+        back_populates="comptable",
+    )

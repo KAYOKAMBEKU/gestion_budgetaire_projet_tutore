@@ -37,6 +37,10 @@ class LigneBudgetaire(Base):
         back_populates="ligne_budgetaire",
         cascade="all, delete-orphan",
     )
+    mouvements_financiers = relationship(
+        "MouvementFinancier",
+        back_populates="ligne_budgetaire",
+    )
 
     def calculer_montant_realise(self):
         total = sum((realisation.montant_realise or 0) for realisation in self.realisations)

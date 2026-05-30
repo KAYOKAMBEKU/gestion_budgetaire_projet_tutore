@@ -73,7 +73,7 @@ export function UserForm({ user, roles, loading, onCancel, onSubmit }: UserFormP
           <p className={labelClass}>Roles</p>
           <div className="mt-2 grid gap-2 md:grid-cols-2">
             {roles.map((role) => (
-              <label className="flex items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700" key={role.id}>
+              <label className="flex items-center gap-2 rounded-md border border-[#E5E7EB] px-3 py-2 text-sm text-[#6B7280]" key={role.id}>
                 <input checked={roleIds.includes(role.id)} type="checkbox" onChange={() => toggleRole(role.id)} />
                 {role.nom_role}
               </label>

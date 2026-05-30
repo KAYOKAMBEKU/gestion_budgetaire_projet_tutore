@@ -16,6 +16,7 @@ import {
   useOpenExerciceBudgetaire,
   useUpdateExerciceBudgetaire,
 } from "../../hooks/useExercicesBudgetaires";
+import { ActionIconButton, EditIcon, SuccessIcon, ToggleIcon, TrashIcon, WarningIcon } from "../ActionIconButton";
 import { ConfirmModal } from "../ConfirmModal";
 import { DataTable, type DataTableColumn } from "../DataTable";
 import { InlineError, LoadingState, SectionHeader } from "../SectionHeader";
@@ -43,6 +44,14 @@ export function ExerciceBudgetaireList() {
     dispatch(showToast({ message: getApiErrorMessage(error), type: "error" }));
   }
 
+  function openSelectedExercice(exercice: ExerciceBudgetaire) {
+    if (activeQuery.data && activeQuery.data.id !== exercice.id) {
+      notifyError(new Error("Impossible d'ouvrir cet exercice : un autre exercice budgetaire est deja ouvert."));
+      return;
+    }
+    openExercice.mutate(exercice.id, { onSuccess: () => notifySuccess("Exercice ouvert."), onError: notifyError });
+  }
+
   function submitForm(payload: ExerciceBudgetaireCreate | ExerciceBudgetaireUpdate) {
     if (formExercice) {
       updateExercice.mutate({ id: formExercice.id, payload: payload as ExerciceBudgetaireUpdate }, { onSuccess: () => { setFormExercice(undefined); notifySuccess("Exercice modifie."); }, onError: notifyError });
@@ -62,7 +71,7 @@ export function ExerciceBudgetaireList() {
   }, [validatedBudgetsQuery.data]);
 
   const columns: DataTableColumn<ExerciceBudgetaire>[] = [
-    { key: "libelle", label: "Exercice", render: (exercice) => <span className="font-semibold text-slate-950">{exercice.libelle}</span> },
+    { key: "libelle", label: "Exercice", render: (exercice) => <span className="font-semibold text-[#1F2937]">{exercice.libelle}</span> },
     { key: "dates", label: "Periode", render: (exercice) => `${exercice.date_debut} au ${exercice.date_fin}` },
     { key: "statut", label: "Statut", render: (exercice) => <StatusBadge status={exercice.statut} /> },
     {
@@ -71,18 +80,18 @@ export function ExerciceBudgetaireList() {
       render: (exercice) => {
         const budgets = validatedBudgetsByExercice.get(exercice.id) ?? [];
         if (validatedBudgetsQuery.isLoading) {
-          return <span className="text-slate-500">Chargement...</span>;
+          return <span className="text-[#6B7280]">Chargement...</span>;
         }
         if (budgets.length === 0) {
-          return <span className="text-slate-500">Aucun budget valide</span>;
+          return <span className="text-[#6B7280]">Aucun budget valide</span>;
         }
         return (
           <div className="grid gap-2">
             {budgets.map((budget) => (
-              <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2" key={budget.id}>
-                <p className="font-semibold text-emerald-900">{budget.reference}</p>
-                <p className="text-xs text-emerald-700">{budget.libelle}</p>
-                <p className="mt-1 text-xs font-semibold text-emerald-800">{formatAmount(Number(budget.montant_total_prevu ?? 0))}</p>
+              <div className="rounded-md border border-[#BBF7D0] bg-[#DCFCE7] px-3 py-2" key={budget.id}>
+                <p className="font-semibold text-[#15803D]">{budget.reference}</p>
+                <p className="text-xs text-[#15803D]">{budget.libelle}</p>
+                <p className="mt-1 text-xs font-semibold text-[#15803D]">{formatAmount(Number(budget.montant_total_prevu ?? 0))}</p>
               </div>
             ))}
           </div>
@@ -100,11 +109,8 @@ export function ExerciceBudgetaireList() {
   }
 
   return (
-    <div className="grid gap-5">
+    <div className="grid gap-5 pb-28">
       <SectionHeader buttonLabel="Ajouter un exercice" subtitle="Ouverture, cloture et suivi de l'exercice actif." title="Gestion des exercices budgetaires" onAdd={() => setFormExercice(null)} />
-      <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-left text-sm text-emerald-800">
-        Exercice actif: <span className="font-semibold">{activeQuery.data?.libelle ?? "Aucun exercice ouvert"}</span>
-      </div>
       <PopupModal open={formExercice !== undefined} title={formExercice ? "Modifier l'exercice" : "Nouvel exercice budgetaire"} onClose={() => setFormExercice(undefined)}>
         <ExerciceBudgetaireForm exercice={formExercice ?? undefined} loading={createExercice.isPending || updateExercice.isPending} onCancel={() => setFormExercice(undefined)} onSubmit={submitForm} />
       </PopupModal>
@@ -115,17 +121,47 @@ export function ExerciceBudgetaireList() {
         getRowKey={(exercice) => exercice.id}
         actions={(exercice) => (
           <div className="flex flex-wrap justify-end gap-2">
-            <button className="text-sm font-semibold text-blue-600 hover:text-blue-800" onClick={() => setFormExercice(exercice)}>Modifier</button>
-            <button
-              className="text-sm font-semibold text-amber-600 hover:text-amber-800"
-              onClick={() => (exercice.statut === "ouvert" ? closeExercice.mutate(exercice.id, { onSuccess: () => notifySuccess("Exercice cloture."), onError: notifyError }) : openExercice.mutate(exercice.id, { onSuccess: () => notifySuccess("Exercice ouvert."), onError: notifyError }))}
+            <ActionIconButton className="text-blue-600 hover:text-[#1D4ED8]" label="Modifier l'exercice" onClick={() => setFormExercice(exercice)}>
+              <EditIcon />
+            </ActionIconButton>
+            <ActionIconButton
+              className="text-amber-600 hover:text-[#92400E]"
+              disabled={exercice.statut !== "ouvert" && Boolean(activeQuery.data && activeQuery.data.id !== exercice.id)}
+              label={
+                exercice.statut !== "ouvert" && activeQuery.data && activeQuery.data.id !== exercice.id
+                  ? "Impossible d'ouvrir cet exercice : un autre exercice budgetaire est deja ouvert."
+                  : exercice.statut === "ouvert"
+                    ? "Cloturer l'exercice"
+                    : "Ouvrir l'exercice"
+              }
+              onClick={() => (exercice.statut === "ouvert" ? closeExercice.mutate(exercice.id, { onSuccess: () => notifySuccess("Exercice cloture."), onError: notifyError }) : openSelectedExercice(exercice))}
             >
-              {exercice.statut === "ouvert" ? "Cloturer" : "Ouvrir"}
-            </button>
-            <button className="text-sm font-semibold text-rose-600 hover:text-rose-800" onClick={() => setDeleteTarget(exercice)}>Supprimer</button>
+              <ToggleIcon active={exercice.statut === "ouvert"} />
+            </ActionIconButton>
+            <ActionIconButton className="text-[#DC2626] hover:text-[#B91C1C]" label="Supprimer l'exercice" onClick={() => setDeleteTarget(exercice)}>
+              <TrashIcon />
+            </ActionIconButton>
           </div>
         )}
       />
+      <footer className="fixed inset-x-4 bottom-4 z-30 flex flex-col gap-3 rounded-lg bg-white/30 px-4 py-3 text-sm shadow-lg backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between lg:left-[19rem] lg:right-8">
+        <div className="flex items-center gap-3 text-[#15803D]">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#DCFCE7]">
+            <SuccessIcon />
+          </span>
+          <p>
+            Exercice actif: <span className="font-semibold">{activeQuery.data?.libelle ?? "Aucun exercice ouvert"}</span>
+          </p>
+        </div>
+        {activeQuery.data ? (
+          <div className="flex items-center gap-3 text-[#92400E]">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#FEF3C7]">
+              <WarningIcon />
+            </span>
+            <p className="font-medium">Impossible d'ouvrir un autre exercice tant que {activeQuery.data.libelle} est ouvert.</p>
+          </div>
+        ) : null}
+      </footer>
       <ConfirmModal
         confirmLabel="Supprimer"
         loading={deleteExercice.isPending}

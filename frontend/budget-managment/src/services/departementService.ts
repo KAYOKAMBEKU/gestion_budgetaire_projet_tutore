@@ -16,6 +16,22 @@ export const departementService = {
     const { data } = await apiClient.get<User[]>(`/departements/${departementId}/gestionnaires`);
     return data;
   },
+  async getAvailableChefsProjet(departementId?: number): Promise<User[]> {
+    const { data } = await apiClient.get<User[]>("/departements/chefs-projet/available", { params: { departement_id: departementId } });
+    return data;
+  },
+  async getChefsProjetByDepartement(departementId: number): Promise<User[]> {
+    const { data } = await apiClient.get<User[]>(`/departements/${departementId}/chefs-projet`);
+    return data;
+  },
+  async assignChefProjet(departementId: number, userId: number): Promise<User> {
+    const { data } = await apiClient.patch<User>(`/departements/${departementId}/assign-chef-projet/${userId}`);
+    return data;
+  },
+  async removeChefProjet(departementId: number, userId: number): Promise<User> {
+    const { data } = await apiClient.patch<User>(`/departements/${departementId}/remove-chef-projet/${userId}`);
+    return data;
+  },
   async getDepartementById(id: number): Promise<Departement> {
     const { data } = await apiClient.get<Departement>(`/departements/${id}`);
     return data;

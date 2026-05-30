@@ -11,21 +11,19 @@ import { ProjectStatusBadge } from "../components/ProjectStatusBadge";
 import { Toast } from "../../administration/components/Toast";
 import { useActiveExercice } from "../hooks/useManagerBudget";
 import { useCreateProject, useChefProjects } from "../hooks/useManagerProjects";
-import { useDepartements } from "../hooks/useDepartements";
 
 function AccessMessage({ title, message }: { title: string; message: string }) {
   return (
-    <main className="grid min-h-screen place-items-center bg-slate-100 p-6">
-      <div className="max-w-lg rounded-lg bg-white p-6 text-left shadow-sm ring-1 ring-slate-200">
-        <h1 className="text-xl font-bold text-slate-950">{title}</h1>
-        <p className="mt-2 text-sm text-slate-600">{message}</p>
+    <main className="grid min-h-screen place-items-center bg-[#F4F7FA] p-6">
+      <div className="max-w-lg rounded-lg bg-white p-6 text-left shadow-sm ring-1 ring-[#E5E7EB]">
+        <h1 className="text-xl font-bold text-[#1F2937]">{title}</h1>
+        <p className="mt-2 text-sm text-[#6B7280]">{message}</p>
       </div>
     </main>
   );
 }
 
-const emptyForm: Omit<ProjetCreate, "departement_id" | "exercice_id"> & { departement_id: number | "" } = {
-  code: "",
+const emptyForm: Omit<ProjetCreate, "departement_id" | "exercice_id"> = {
   titre: "",
   description: "",
   objectif: "",
@@ -33,7 +31,6 @@ const emptyForm: Omit<ProjetCreate, "departement_id" | "exercice_id"> & { depart
   date_debut_prevue: "",
   date_fin_prevue: "",
   cout_estime: undefined,
-  departement_id: "",
 };
 
 export function ChefProjectsPage() {
@@ -43,7 +40,6 @@ export function ChefProjectsPage() {
   const [form, setForm] = useState(emptyForm);
 
   const projectsQuery = useChefProjects(currentUser?.id);
-  const departementsQuery = useDepartements();
   const activeExerciceQuery = useActiveExercice();
   const createProject = useCreateProject();
 
@@ -52,18 +48,25 @@ export function ChefProjectsPage() {
   }
 
   function submitProject() {
-    if (!form.code.trim() || !form.titre.trim() || !form.departement_id) {
-      dispatch(showToast({ message: "Veuillez renseigner le code, le titre et le departement du projet.", type: "error" }));
+    if (!form.titre.trim()) {
+      dispatch(showToast({ message: "Veuillez renseigner le nom du projet.", type: "error" }));
+      return;
+    }
+    if (!currentUser?.departement_id) {
+      dispatch(showToast({ message: "Votre compte Chef de projet n'est rattache a aucun departement.", type: "error" }));
       return;
     }
     if (!activeExerciceQuery.data) {
       dispatch(showToast({ message: "Aucun exercice budgetaire ouvert. Impossible de creer un projet.", type: "error" }));
       return;
     }
+    if (form.date_debut_prevue && form.date_fin_prevue && form.date_fin_prevue < form.date_debut_prevue) {
+      dispatch(showToast({ message: "La date de fin du projet doit etre posterieure a la date de debut.", type: "error" }));
+      return;
+    }
 
     createProject.mutate(
       {
-        code: form.code,
         titre: form.titre,
         description: form.description || undefined,
         objectif: form.objectif || undefined,
@@ -71,7 +74,7 @@ export function ChefProjectsPage() {
         date_debut_prevue: form.date_debut_prevue || undefined,
         date_fin_prevue: form.date_fin_prevue || undefined,
         cout_estime: form.cout_estime,
-        departement_id: form.departement_id,
+        departement_id: currentUser.departement_id,
         exercice_id: activeExerciceQuery.data.id,
       },
       {
@@ -86,7 +89,7 @@ export function ChefProjectsPage() {
   }
 
   if (authLoading) {
-    return <main className="grid min-h-screen place-items-center bg-slate-100 text-sm font-semibold text-slate-600">Verification de la session...</main>;
+    return <main className="grid min-h-screen place-items-center bg-[#F4F7FA] text-sm font-semibold text-[#6B7280]">Verification de la session...</main>;
   }
   if (!isAuthenticated) {
     return <AccessMessage message="Vous devez etre connecte pour acceder a cette page." title="Connexion requise" />;
@@ -96,54 +99,54 @@ export function ChefProjectsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-100 lg:flex">
+    <main className="min-h-screen bg-[#F4F7FA] lg:flex">
       <ManagerSidebar />
       <div className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto grid max-w-7xl gap-6">
-          <header className="rounded-lg bg-white p-6 text-left shadow-sm ring-1 ring-slate-200">
+          <header className="rounded-lg bg-white p-6 text-left shadow-sm ring-1 ring-[#E5E7EB]">
             <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
               <div>
-                <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">Espace Chef de projet</p>
-                <h1 className="mt-2 text-3xl font-bold text-slate-950">Mes projets</h1>
-                <p className="mt-2 text-sm text-slate-600">Creez un projet, choisissez le departement destinataire, puis creez son budget.</p>
+                <p className="text-sm font-semibold uppercase tracking-wide text-[#15803D]">Espace Chef de projet</p>
+                <h1 className="mt-2 text-3xl font-bold text-[#1F2937]">Mes projets</h1>
+                <p className="mt-2 text-sm text-[#6B7280]">Creez un projet, choisissez le departement destinataire, puis creez son budget.</p>
               </div>
-              <button className="rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800" onClick={() => setIsCreateOpen(true)}>
+              <button className="btn-primary rounded-md px-4 py-2 text-sm font-semibold text-white hover:bg-[#166F48]" onClick={() => setIsCreateOpen(true)}>
                 Creer un projet
               </button>
             </div>
           </header>
 
           {activeExerciceQuery.isError ? (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-left text-sm font-medium text-amber-800">
+            <div className="rounded-lg border border-[#FDE68A] bg-[#FEF3C7] px-4 py-3 text-left text-sm font-medium text-[#92400E]">
               Aucun exercice budgetaire ouvert. La creation de projet reste indisponible.
             </div>
           ) : null}
 
-          <section className="rounded-lg bg-white p-6 shadow-sm ring-1 ring-slate-200">
+          <section className="rounded-lg bg-white p-6 shadow-sm ring-1 ring-[#E5E7EB]">
             {projectsQuery.isLoading ? (
-              <p className="py-10 text-center text-sm font-semibold text-slate-600">Chargement des projets...</p>
+              <p className="py-10 text-center text-sm font-semibold text-[#6B7280]">Chargement des projets...</p>
             ) : projectsQuery.data?.length ? (
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
                   <thead>
-                    <tr className="border-b border-slate-200 bg-slate-50">
-                      <th className="px-4 py-3 font-semibold text-slate-700">Code</th>
-                      <th className="px-4 py-3 font-semibold text-slate-700">Titre</th>
-                      <th className="px-4 py-3 font-semibold text-slate-700">Departement</th>
-                      <th className="px-4 py-3 font-semibold text-slate-700">Statut</th>
-                      <th className="px-4 py-3 font-semibold text-slate-700">Actions</th>
+                    <tr className="border-b border-[#E5E7EB] bg-[#F9FAFB]">
+                      <th className="px-4 py-3 font-semibold text-[#374151]">Code</th>
+                      <th className="px-4 py-3 font-semibold text-[#374151]">Titre</th>
+                      <th className="px-4 py-3 font-semibold text-[#374151]">Departement</th>
+                      <th className="px-4 py-3 font-semibold text-[#374151]">Statut</th>
+                      <th className="px-4 py-3 font-semibold text-[#374151]">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {projectsQuery.data.map((project) => (
-                      <tr key={project.id} className="border-b border-slate-200 hover:bg-slate-50">
-                        <td className="px-4 py-3 font-mono text-xs font-semibold text-slate-700">{project.code}</td>
-                        <td className="px-4 py-3 font-semibold text-slate-950">{project.titre}</td>
-                        <td className="px-4 py-3 text-slate-600">{project.departement?.nom ?? project.departement_id}</td>
+                      <tr key={project.id} className="border-b border-[#E5E7EB] hover:bg-[#F4F7FA]">
+                        <td className="px-4 py-3 font-mono text-xs font-semibold text-[#374151]">{project.code}</td>
+                        <td className="px-4 py-3 font-semibold text-[#1F2937]">{project.titre}</td>
+                        <td className="px-4 py-3 text-[#6B7280]">{project.departement?.nom ?? project.departement_id}</td>
                         <td className="px-4 py-3"><ProjectStatusBadge status={project.statut} /></td>
                         <td className="px-4 py-3">
                           <div className="flex flex-wrap gap-3">
-                            <Link className="text-emerald-600 hover:text-emerald-700 hover:underline" to={`/chef/budgets/create?projectId=${project.id}`}>
+                            <Link className="text-[#16A34A] hover:text-[#166F48] hover:underline" to={`/chef/budgets?projectId=${project.id}`}>
                               Creer le budget
                             </Link>
                           </div>
@@ -154,8 +157,8 @@ export function ChefProjectsPage() {
                 </table>
               </div>
             ) : (
-              <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 py-12 text-center">
-                <p className="text-sm font-semibold text-slate-600">Aucun projet cree pour le moment.</p>
+              <div className="rounded-lg border border-dashed border-[#D1D5DB] bg-[#F9FAFB] py-12 text-center">
+                <p className="text-sm font-semibold text-[#6B7280]">Aucun projet cree pour le moment.</p>
               </div>
             )}
           </section>
@@ -165,58 +168,53 @@ export function ChefProjectsPage() {
       <PopupModal open={isCreateOpen} title="Creer un projet" onClose={() => setIsCreateOpen(false)}>
         <div className="grid gap-4 text-left">
           <div className="grid gap-3 sm:grid-cols-2">
-            <label className="grid gap-1 text-sm font-semibold text-slate-700">
-              Code
-              <input className="rounded-md border border-slate-200 px-3 py-2 font-normal" value={form.code} onChange={(event) => updateForm("code", event.target.value)} />
+            <label className="grid gap-1 text-sm font-semibold text-[#374151]">
+              Nom du projet
+              <input className="rounded-md border border-[#E5E7EB] px-3 py-2 font-normal" value={form.titre} onChange={(event) => updateForm("titre", event.target.value)} />
             </label>
-            <label className="grid gap-1 text-sm font-semibold text-slate-700">
-              Titre
-              <input className="rounded-md border border-slate-200 px-3 py-2 font-normal" value={form.titre} onChange={(event) => updateForm("titre", event.target.value)} />
-            </label>
+            <div className="rounded-md bg-[#F9FAFB] px-3 py-2 text-sm text-[#6B7280]">
+              Code projet: <span className="font-semibold text-[#1F2937]">genere automatiquement</span>
+            </div>
           </div>
-          <label className="grid gap-1 text-sm font-semibold text-slate-700">
-            Departement destinataire
-            <select className="rounded-md border border-slate-200 px-3 py-2 font-normal" value={form.departement_id} onChange={(event) => updateForm("departement_id", event.target.value ? Number(event.target.value) : "")}>
-              <option value="">{departementsQuery.isLoading ? "Chargement..." : "Choisir un departement"}</option>
-              {(departementsQuery.data ?? []).filter((departement) => departement.statut === "actif").map((departement) => (
-                <option key={departement.id} value={departement.id}>{departement.nom}</option>
-              ))}
-            </select>
-          </label>
-          <label className="grid gap-1 text-sm font-semibold text-slate-700">
+          <div className="grid gap-3 rounded-md bg-[#F9FAFB] px-3 py-3 text-sm text-[#6B7280] sm:grid-cols-3">
+            <p>Departement: <span className="font-semibold text-[#1F2937]">{currentUser?.departement?.nom ?? currentUser?.departement_id ?? "Non renseigne"}</span></p>
+            <p>Chef de projet: <span className="font-semibold text-[#1F2937]">{currentUser ? `${currentUser.prenom ?? ""} ${currentUser.nom}`.trim() : "-"}</span></p>
+            <p>Statut: <span className="font-semibold text-[#1F2937]">Brouillon</span></p>
+          </div>
+          <label className="grid gap-1 text-sm font-semibold text-[#374151]">
             Description
-            <textarea className="min-h-20 rounded-md border border-slate-200 px-3 py-2 font-normal" value={form.description} onChange={(event) => updateForm("description", event.target.value)} />
+            <textarea className="min-h-20 rounded-md border border-[#E5E7EB] px-3 py-2 font-normal" value={form.description} onChange={(event) => updateForm("description", event.target.value)} />
           </label>
-          <label className="grid gap-1 text-sm font-semibold text-slate-700">
+          <label className="grid gap-1 text-sm font-semibold text-[#374151]">
             Objectif
-            <textarea className="min-h-20 rounded-md border border-slate-200 px-3 py-2 font-normal" value={form.objectif} onChange={(event) => updateForm("objectif", event.target.value)} />
+            <textarea className="min-h-20 rounded-md border border-[#E5E7EB] px-3 py-2 font-normal" value={form.objectif} onChange={(event) => updateForm("objectif", event.target.value)} />
           </label>
-          <label className="grid gap-1 text-sm font-semibold text-slate-700">
+          <label className="grid gap-1 text-sm font-semibold text-[#374151]">
             Resultat attendu
-            <textarea className="min-h-20 rounded-md border border-slate-200 px-3 py-2 font-normal" value={form.resultat_attendu} onChange={(event) => updateForm("resultat_attendu", event.target.value)} />
+            <textarea className="min-h-20 rounded-md border border-[#E5E7EB] px-3 py-2 font-normal" value={form.resultat_attendu} onChange={(event) => updateForm("resultat_attendu", event.target.value)} />
           </label>
           <div className="grid gap-3 sm:grid-cols-3">
-            <label className="grid gap-1 text-sm font-semibold text-slate-700">
+            <label className="grid gap-1 text-sm font-semibold text-[#374151]">
               Debut prevu
-              <input className="rounded-md border border-slate-200 px-3 py-2 font-normal" type="date" value={form.date_debut_prevue} onChange={(event) => updateForm("date_debut_prevue", event.target.value)} />
+              <input className="rounded-md border border-[#E5E7EB] px-3 py-2 font-normal" type="date" value={form.date_debut_prevue} onChange={(event) => updateForm("date_debut_prevue", event.target.value)} />
             </label>
-            <label className="grid gap-1 text-sm font-semibold text-slate-700">
+            <label className="grid gap-1 text-sm font-semibold text-[#374151]">
               Fin prevue
-              <input className="rounded-md border border-slate-200 px-3 py-2 font-normal" type="date" value={form.date_fin_prevue} onChange={(event) => updateForm("date_fin_prevue", event.target.value)} />
+              <input className="rounded-md border border-[#E5E7EB] px-3 py-2 font-normal" type="date" value={form.date_fin_prevue} onChange={(event) => updateForm("date_fin_prevue", event.target.value)} />
             </label>
-            <label className="grid gap-1 text-sm font-semibold text-slate-700">
+            <label className="grid gap-1 text-sm font-semibold text-[#374151]">
               Cout estime
-              <input className="rounded-md border border-slate-200 px-3 py-2 font-normal" min="0" type="number" value={form.cout_estime ?? ""} onChange={(event) => updateForm("cout_estime", event.target.value ? Number(event.target.value) : undefined)} />
+              <input className="rounded-md border border-[#E5E7EB] px-3 py-2 font-normal" min="0" type="number" value={form.cout_estime ?? ""} onChange={(event) => updateForm("cout_estime", event.target.value ? Number(event.target.value) : undefined)} />
             </label>
           </div>
-          <div className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">
-            Exercice: <span className="font-semibold text-slate-950">{activeExerciceQuery.data?.libelle ?? "Aucun exercice ouvert"}</span>
+          <div className="rounded-md bg-[#F9FAFB] px-3 py-2 text-sm text-[#6B7280]">
+            Exercice: <span className="font-semibold text-[#1F2937]">{activeExerciceQuery.data?.libelle ?? "Aucun exercice ouvert"}</span>
           </div>
           <div className="flex justify-end gap-3">
-            <button className="rounded-md border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" onClick={() => setIsCreateOpen(false)}>
+            <button className="rounded-md border border-[#E5E7EB] px-4 py-2 text-sm font-semibold text-[#374151] hover:bg-[#F4F7FA]" onClick={() => setIsCreateOpen(false)}>
               Annuler
             </button>
-            <button className="rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-60" disabled={createProject.isPending || !activeExerciceQuery.data} onClick={submitProject}>
+            <button className="btn-primary rounded-md px-4 py-2 text-sm font-semibold text-white hover:bg-[#166F48] disabled:opacity-60" disabled={createProject.isPending || !activeExerciceQuery.data} onClick={submitProject}>
               {createProject.isPending ? "Creation..." : "Creer"}
             </button>
           </div>

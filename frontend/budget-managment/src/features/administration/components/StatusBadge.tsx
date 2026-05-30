@@ -1,14 +1,14 @@
 type Status = "actif" | "inactif" | "ouvert" | "cloture" | "valide" | "rejete" | string;
 
 const styles: Record<string, string> = {
-  actif: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-  ouvert: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-  valide: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-  soumis: "bg-amber-50 text-amber-700 ring-amber-200",
-  "En attente de validation": "bg-amber-50 text-amber-700 ring-amber-200",
-  inactif: "bg-slate-100 text-slate-600 ring-slate-200",
-  cloture: "bg-amber-50 text-amber-700 ring-amber-200",
-  rejete: "bg-rose-50 text-rose-700 ring-rose-200",
+  actif: "bg-[#DCFCE7] text-[#16A34A] ring-[#BBF7D0]",
+  ouvert: "bg-[#DBEAFE] text-[#2563EB] ring-[#BFDBFE]",
+  valide: "bg-[#DCFCE7] text-[#16A34A] ring-[#BBF7D0]",
+  soumis: "bg-[#FEF3C7] text-[#D97706] ring-[#FDE68A]",
+  "En attente de validation": "bg-[#FEF3C7] text-[#D97706] ring-[#FDE68A]",
+  inactif: "bg-[#F3F4F6] text-[#6B7280] ring-[#E5E7EB]",
+  cloture: "bg-[#F3F4F6] text-[#374151] ring-[#E5E7EB]",
+  rejete: "bg-[#FEE2E2] text-[#DC2626] ring-[#FECACA]",
 };
 
 export function StatusBadge({ status }: { status: Status }) {

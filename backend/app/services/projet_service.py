@@ -1,15 +1,21 @@
 from sqlalchemy.orm import Session
+from uuid import uuid4
 
 from app.models.departement import Departement
 from app.models.exercice_budgetaire import ExerciceBudgetaire
 from app.models.projet import Projet
 from app.models.user import User
 from app.schemas.projet import ProjetCreate, ProjetUpdate
-from app.services._utils import require_unique, schema_to_dict, update_model
+from app.services._utils import schema_to_dict, update_model
 
 VALID_STATUTS = {"brouillon", "soumis", "approuve", "rejete", "en_execution", "cloture"}
 ROLE_CHEF_PROJET = "chef de projet"
 ROLE_GESTIONNAIRE = "gestionnaire"
+PROJECT_CODE_PREFIX = "AFGLPR00"
+
+
+def generate_project_code(project_id: int) -> str:
+    return f"{PROJECT_CODE_PREFIX}{project_id}"
 
 
 def _has_role(user: User, role_keyword: str) -> bool:
@@ -72,7 +78,7 @@ def create_projet(db: Session, projet_in: ProjetCreate, current_user: User):
             raise PermissionError("Le Gestionnaire ne peut pas creer de projet. Il supervise uniquement les projets des Chefs de projet de son departement.")
         raise PermissionError("Seul un utilisateur ayant le role 'Chef de projet' peut creer un projet.")
     data = schema_to_dict(projet_in, exclude_unset=False)
-    require_unique(get_projet_by_code(db, data["code"]), "Un projet avec ce code existe deja")
+    data.pop("code", None)
 
     departement = db.query(Departement).filter(Departement.id == data["departement_id"]).first()
     if departement is None:
@@ -84,10 +90,13 @@ def create_projet(db: Session, projet_in: ProjetCreate, current_user: User):
 
     projet = Projet(
         **data,
+        code=f"TMP-{uuid4().hex}",
         created_by_id=current_user.id,
         chef_projet_id=current_user.id,
     )
     db.add(projet)
+    db.flush()
+    projet.code = generate_project_code(projet.id)
     db.commit()
     db.refresh(projet)
     return projet
@@ -100,9 +109,7 @@ def update_projet(db: Session, projet_id: int, projet_in: ProjetUpdate):
 
     data = schema_to_dict(projet_in)
     if "code" in data:
-        existing = get_projet_by_code(db, data["code"])
-        if existing is not None and existing.id != projet_id:
-            raise ValueError("Un projet avec ce code existe deja")
+        raise ValueError("Le code du projet est genere automatiquement et ne peut pas etre modifie.")
 
     candidate_departement_id = data.get("departement_id", projet.departement_id)
     candidate_chef_projet_id = data.get("chef_projet_id", projet.chef_projet_id)

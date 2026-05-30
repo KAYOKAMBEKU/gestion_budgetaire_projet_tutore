@@ -16,10 +16,10 @@ interface DataTableProps<T> {
 
 export function DataTable<T>({ columns, data, getRowKey, actions, emptyMessage = "Aucun element a afficher." }: DataTableProps<T>) {
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+    <div className="overflow-hidden bg-white/30">
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
-          <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+        <table className="min-w-full divide-y divide-[#E5E7EB] text-left text-sm">
+          <thead className="bg-[#F9FAFB] text-xs uppercase tracking-wide text-[#374151]">
             <tr>
               {columns.map((column) => (
                 <th className="px-4 py-3 font-semibold" key={column.key}>
@@ -29,16 +29,16 @@ export function DataTable<T>({ columns, data, getRowKey, actions, emptyMessage =
               {actions ? <th className="px-4 py-3 text-right font-semibold">Actions</th> : null}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 text-slate-700">
+          <tbody className="divide-y divide-[#E5E7EB] text-[#1F2937]">
             {data.length === 0 ? (
               <tr>
-                <td className="px-4 py-8 text-center text-slate-500" colSpan={columns.length + (actions ? 1 : 0)}>
+                <td className="px-4 py-8 text-center text-[#6B7280]" colSpan={columns.length + (actions ? 1 : 0)}>
                   {emptyMessage}
                 </td>
               </tr>
             ) : (
               data.map((item) => (
-                <tr className="hover:bg-slate-50/80" key={getRowKey(item)}>
+                <tr className="hover:bg-[#F4F7FA]" key={getRowKey(item)}>
                   {columns.map((column) => (
                     <td className="px-4 py-3 align-top" key={column.key}>
                       {column.render(item)}

@@ -44,7 +44,7 @@ export function RoleForm({ role, permissions, loading, onCancel, onSubmit }: Rol
           <p className={labelClass}>Permissions</p>
           <div className="mt-2 grid gap-2 md:grid-cols-2">
             {permissions.map((permission) => (
-              <label className="flex items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700" key={permission.id}>
+              <label className="flex items-center gap-2 rounded-md border border-[#E5E7EB] px-3 py-2 text-sm text-[#6B7280]" key={permission.id}>
                 <input checked={permissionIds.includes(permission.id)} type="checkbox" onChange={() => togglePermission(permission.id)} />
                 {permission.code}
               </label>
