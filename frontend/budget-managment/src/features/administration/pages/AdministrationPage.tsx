@@ -28,7 +28,7 @@ import { ComptableAnalyseEcartsPage } from "../../comptable/pages/ComptableAnaly
 import { ComptableBudgetDetailPage } from "../../comptable/pages/ComptableBudgetDetailPage";
 import { ComptableBudgetsPage } from "../../comptable/pages/ComptableBudgetsPage";
 import { ComptableDashboardPage } from "../../comptable/pages/ComptableDashboardPage";
-import { ComptableMovementPage } from "../../comptable/pages/ComptableMovementPage";
+import { ComptableMouvementsPage } from "../../comptable/pages/ComptableMouvementsPage";
 import { ComptableRealisationsPage } from "../../comptable/pages/ComptableRealisationsPage";
 
 function UserAdministrationSection({ activeTab }: { activeTab: AdminTabId }) {
@@ -178,8 +178,9 @@ export function AppRoutes() {
       <Route element={<ComptableDashboardPage />} path="/comptable/dashboard" />
       <Route element={<ComptableBudgetsPage />} path="/comptable/budgets" />
       <Route element={<ComptableBudgetDetailPage />} path="/comptable/budgets/:id" />
-      <Route element={<ComptableMovementPage type="entree" />} path="/comptable/entrees" />
-      <Route element={<ComptableMovementPage type="sortie" />} path="/comptable/sorties" />
+      <Route element={<ComptableMouvementsPage />} path="/comptable/mouvements" />
+      <Route element={<Navigate replace to="/comptable/mouvements" />} path="/comptable/entrees" />
+      <Route element={<Navigate replace to="/comptable/mouvements" />} path="/comptable/sorties" />
       <Route element={<ComptableRealisationsPage />} path="/comptable/realisations" />
       <Route element={<ComptableAnalyseEcartsPage />} path="/comptable/analyse-ecarts" />
       <Route element={<Navigate replace to="/login" />} path="*" />

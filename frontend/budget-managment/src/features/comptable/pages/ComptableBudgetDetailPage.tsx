@@ -149,14 +149,14 @@ export function ComptableBudgetDetailPage() {
       <ComptableSidebar />
       <div className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto grid max-w-7xl gap-6">
-          <Link className="text-sm font-semibold text-[#2563EB] hover:text-[#1D4ED8]" to="/comptable/budgets">
+          <Link className="text-sm font-semibold text-[#15803D] hover:text-[#166F48]" to="/comptable/budgets">
             Retour aux budgets
           </Link>
 
           <header className="rounded-lg bg-white p-6 text-left shadow-sm ring-1 ring-[#E5E7EB]">
             <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
               <div>
-                <p className="text-sm font-semibold uppercase tracking-wide text-[#2563EB]">Execution budgetaire</p>
+                <p className="text-sm font-semibold uppercase tracking-wide text-[#15803D]">Execution budgetaire</p>
                 <h1 className="mt-2 text-3xl font-bold text-[#1F2937]">{budget.libelle}</h1>
                 <p className="mt-2 text-sm text-[#6B7280]">{budget.reference} - {budget.projet?.titre ?? budget.projet_id}</p>
               </div>
@@ -176,17 +176,17 @@ export function ComptableBudgetDetailPage() {
             <div>
               <h2 className="text-lg font-bold text-[#1F2937]">Budget previsionnel</h2>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <div className="rounded-lg bg-[#DCFCE7] p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-[#15803D]">Recettes prevues</p>
-                  <p className="mt-2 font-bold text-[#15803D]">{formatAmount(execution?.total_recettes_prevues ?? 0)}</p>
+                <div className="rounded-lg bg-[#F9FAFB] p-4 ring-1 ring-[#E5E7EB]">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Recettes prevues</p>
+                  <p className="mt-2 font-bold text-[#1F2937]">{formatAmount(execution?.total_recettes_prevues ?? 0)}</p>
                 </div>
-                <div className="rounded-lg bg-[#FEE2E2] p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-[#DC2626]">Depenses prevues</p>
-                  <p className="mt-2 font-bold text-[#B91C1C]">{formatAmount(execution?.total_depenses_prevues ?? budget.montant_total_prevu ?? 0)}</p>
+                <div className="rounded-lg bg-[#F9FAFB] p-4 ring-1 ring-[#E5E7EB]">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Depenses prevues</p>
+                  <p className="mt-2 font-bold text-[#1F2937]">{formatAmount(execution?.total_depenses_prevues ?? budget.montant_total_prevu ?? 0)}</p>
                 </div>
-                <div className="rounded-lg bg-[#DBEAFE] p-4 sm:col-span-2">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-[#2563EB]">Solde previsionnel</p>
-                  <p className="mt-2 font-bold text-[#1D4ED8]">{formatAmount(execution?.solde_previsionnel ?? 0)}</p>
+                <div className="rounded-lg bg-[#F9FAFB] p-4 ring-1 ring-[#E5E7EB] sm:col-span-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Solde previsionnel</p>
+                  <p className="mt-2 font-bold text-[#1F2937]">{formatAmount(execution?.solde_previsionnel ?? 0)}</p>
                 </div>
               </div>
             </div>
@@ -194,15 +194,15 @@ export function ComptableBudgetDetailPage() {
             <div>
               <h2 className="text-lg font-bold text-[#1F2937]">Budget realise</h2>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <div className="rounded-lg bg-[#DCFCE7] p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-[#15803D]">Recettes encaissees</p>
-                  <p className="mt-2 font-bold text-[#15803D]">{formatAmount(execution?.total_recettes_realisees ?? 0)}</p>
+                <div className="rounded-lg bg-[#F9FAFB] p-4 ring-1 ring-[#E5E7EB]">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Recettes encaissees</p>
+                  <p className="mt-2 font-bold text-[#1F2937]">{formatAmount(execution?.total_recettes_realisees ?? 0)}</p>
                 </div>
-                <div className="rounded-lg bg-[#FEE2E2] p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-[#DC2626]">Depenses payees</p>
-                  <p className="mt-2 font-bold text-[#B91C1C]">{formatAmount(execution?.total_depenses_realisees ?? 0)}</p>
+                <div className="rounded-lg bg-[#F9FAFB] p-4 ring-1 ring-[#E5E7EB]">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Depenses payees</p>
+                  <p className="mt-2 font-bold text-[#1F2937]">{formatAmount(execution?.total_depenses_realisees ?? 0)}</p>
                 </div>
-                <div className="rounded-lg bg-[#F9FAFB] p-4 sm:col-span-2">
+                <div className="rounded-lg bg-[#F9FAFB] p-4 ring-1 ring-[#E5E7EB] sm:col-span-2">
                   <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Solde realise</p>
                   <p className="mt-2 font-bold text-[#1F2937]">{formatAmount(execution?.solde_realise ?? 0)}</p>
                 </div>
@@ -359,7 +359,7 @@ export function ComptableBudgetDetailPage() {
           </label>
           <div className="flex justify-end gap-3">
             <button className="rounded-md border border-[#E5E7EB] px-4 py-2 text-sm font-semibold text-[#374151]" onClick={() => setFormOpen(false)}>Annuler</button>
-            <button className="rounded-md bg-[#3B82F6] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60" disabled={createMouvement.isPending} onClick={submitMovement}>
+            <button className="btn-primary rounded-md px-4 py-2 text-sm font-semibold text-white disabled:opacity-60" disabled={createMouvement.isPending} onClick={submitMovement}>
               {createMouvement.isPending ? "Enregistrement..." : "Enregistrer"}
             </button>
           </div>

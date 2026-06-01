@@ -33,10 +33,6 @@ export function ComptableRealisationsPage() {
   const budget = contextQuery.data?.budget ?? executableBudgets.find((item) => item.id === activeBudgetId);
   const execution = contextQuery.data?.execution;
   const lignes = execution?.lignes_budgetaires ?? [];
-  const mouvements = execution?.mouvements_financiers ?? [];
-
-  const sorties = mouvements.filter((mouvement) => mouvement.type_mouvement === "sortie");
-  const entrees = mouvements.filter((mouvement) => mouvement.type_mouvement === "entree");
 
   if (authLoading) {
     return <main className="grid min-h-screen place-items-center bg-[#F4F7FA] text-sm font-semibold text-[#6B7280]">Verification de la session...</main>;
@@ -54,7 +50,7 @@ export function ComptableRealisationsPage() {
       <div className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto grid max-w-7xl gap-6">
           <header className="rounded-lg bg-white p-6 text-left shadow-sm ring-1 ring-[#E5E7EB]">
-            <p className="text-sm font-semibold uppercase tracking-wide text-[#2563EB]">Execution budgetaire</p>
+            <p className="text-sm font-semibold uppercase tracking-wide text-[#15803D]">Execution budgetaire</p>
             <h1 className="mt-2 text-3xl font-bold text-[#1F2937]">Realisations budgetaires</h1>
             <p className="mt-2 text-sm text-[#6B7280]">Suivez les montants realises automatiquement depuis les entrees et sorties financieres.</p>
           </header>
@@ -98,19 +94,19 @@ export function ComptableRealisationsPage() {
           {budget ? (
             <>
               <section className="grid gap-4 rounded-lg bg-white p-6 text-left shadow-sm ring-1 ring-[#E5E7EB] md:grid-cols-4">
-                <div className="rounded-lg bg-[#DCFCE7] p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-[#15803D]">Recettes realisees</p>
-                  <p className="mt-2 text-lg font-bold text-[#15803D]">{formatAmount(execution?.total_recettes_realisees ?? 0)}</p>
+                <div className="rounded-lg bg-[#F9FAFB] p-4 ring-1 ring-[#E5E7EB]">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Recettes realisees</p>
+                  <p className="mt-2 text-lg font-bold text-[#1F2937]">{formatAmount(execution?.total_recettes_realisees ?? 0)}</p>
                 </div>
-                <div className="rounded-lg bg-[#FEE2E2] p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-[#DC2626]">Depenses realisees</p>
-                  <p className="mt-2 text-lg font-bold text-[#B91C1C]">{formatAmount(execution?.total_depenses_realisees ?? 0)}</p>
+                <div className="rounded-lg bg-[#F9FAFB] p-4 ring-1 ring-[#E5E7EB]">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Depenses realisees</p>
+                  <p className="mt-2 text-lg font-bold text-[#1F2937]">{formatAmount(execution?.total_depenses_realisees ?? 0)}</p>
                 </div>
-                <div className="rounded-lg bg-[#DBEAFE] p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-[#2563EB]">Budget realise</p>
-                  <p className="mt-2 text-lg font-bold text-[#1D4ED8]">{formatAmount(execution?.montant_realise_total ?? 0)}</p>
+                <div className="rounded-lg bg-[#F9FAFB] p-4 ring-1 ring-[#E5E7EB]">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Budget realise</p>
+                  <p className="mt-2 text-lg font-bold text-[#1F2937]">{formatAmount(execution?.montant_realise_total ?? 0)}</p>
                 </div>
-                <div className="rounded-lg bg-[#F9FAFB] p-4">
+                <div className="rounded-lg bg-[#F9FAFB] p-4 ring-1 ring-[#E5E7EB]">
                   <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Solde realise</p>
                   <p className="mt-2 text-lg font-bold text-[#1F2937]">{formatAmount(execution?.solde_realise ?? 0)}</p>
                 </div>
@@ -124,10 +120,6 @@ export function ComptableRealisationsPage() {
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Departement</p>
                   <p className="mt-1 font-semibold text-[#1F2937]">{budget.projet?.departement?.nom ?? budget.departement_id}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Mouvements</p>
-                  <p className="mt-1 font-semibold text-[#1F2937]">{entrees.length} entree(s), {sorties.length} sortie(s)</p>
                 </div>
               </section>
 
@@ -177,58 +169,6 @@ export function ComptableRealisationsPage() {
                 </div>
               </section>
 
-              <section className="rounded-lg bg-white p-6 text-left shadow-sm ring-1 ring-[#E5E7EB]">
-                <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-                  <div>
-                    <h2 className="text-lg font-bold text-[#1F2937]">Mouvements alimentant le realise</h2>
-                    <p className="mt-1 text-sm text-[#6B7280]">Chaque mouvement conserve sa date, son type, sa reference et son montant.</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Link className="btn-primary rounded-md px-3 py-2 text-sm font-semibold text-white hover:bg-[#166F48]" to="/comptable/entrees">Nouvelle entree</Link>
-                    <Link className="btn-danger rounded-md px-3 py-2 text-sm font-semibold text-white hover:bg-[#B91C1C]" to="/comptable/sorties">Nouvelle sortie</Link>
-                  </div>
-                </div>
-                <div className="mt-4 overflow-x-auto">
-                  <table className="w-full text-left text-sm">
-                    <thead className="bg-[#F9FAFB]">
-                      <tr>
-                        <th className="px-4 py-3 font-semibold text-[#374151]">Date</th>
-                        <th className="px-4 py-3 font-semibold text-[#374151]">Type</th>
-                        <th className="px-4 py-3 font-semibold text-[#374151]">Libelle</th>
-                        <th className="px-4 py-3 font-semibold text-[#374151]">Categorie</th>
-                        <th className="px-4 py-3 font-semibold text-[#374151]">Reference</th>
-                        <th className="px-4 py-3 font-semibold text-[#374151]">Montant</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {contextQuery.isLoading ? (
-                        <tr>
-                          <td className="px-4 py-8 text-center text-[#6B7280]" colSpan={6}>Chargement...</td>
-                        </tr>
-                      ) : mouvements.length === 0 ? (
-                        <tr>
-                          <td className="px-4 py-8 text-center text-[#6B7280]" colSpan={6}>Aucun mouvement enregistre.</td>
-                        </tr>
-                      ) : (
-                        mouvements.map((mouvement) => (
-                          <tr key={mouvement.id} className="border-b border-[#E5E7EB]">
-                            <td className="px-4 py-3 text-[#6B7280]">{mouvement.date_mouvement}</td>
-                            <td className="px-4 py-3">
-                              <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${mouvement.type_mouvement === "entree" ? "bg-[#DCFCE7] text-[#15803D]" : "bg-[#FEE2E2] text-[#DC2626]"}`}>
-                                {mouvement.type_mouvement}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 font-semibold text-[#1F2937]">{mouvement.libelle}</td>
-                            <td className="px-4 py-3 text-[#6B7280]">{mouvement.categorie ?? "-"}</td>
-                            <td className="px-4 py-3 text-[#6B7280]">{mouvement.reference_paiement ?? "-"}</td>
-                            <td className="px-4 py-3 font-semibold text-[#1F2937]">{formatAmount(mouvement.montant)}</td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </section>
             </>
           ) : null}
         </div>
@@ -236,4 +176,3 @@ export function ComptableRealisationsPage() {
     </main>
   );
 }
-

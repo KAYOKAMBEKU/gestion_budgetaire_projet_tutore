@@ -26,6 +26,9 @@ export function ManagerProjectsPage() {
   const availableChefsQuery = useAvailableChefsProjet(currentUser?.departement_id);
   const assignChef = useAssignChefProjet(currentUser?.departement_id);
   const removeChef = useRemoveChefProjet(currentUser?.departement_id);
+  const unassignedProjects = (projectsQuery.data ?? []).filter((project) => !project.chef_projet_id);
+  const assignedChefIds = new Set((chefsQuery.data ?? []).map((user) => user.id));
+  const availableChefs = (availableChefsQuery.data ?? []).filter((user) => !assignedChefIds.has(user.id));
 
   if (authLoading) {
     return <main className="grid min-h-screen place-items-center bg-[#F4F7FA] text-sm font-semibold text-[#6B7280]">Verification de la session...</main>;
@@ -67,7 +70,7 @@ export function ManagerProjectsPage() {
                   onChange={(event) => setSelectedChefId(event.target.value ? Number(event.target.value) : "")}
                 >
                   <option value="">{availableChefsQuery.isLoading ? "Chargement..." : "Choisir un Chef de projet"}</option>
-                  {(availableChefsQuery.data ?? []).map((user) => (
+                  {availableChefs.map((user) => (
                     <option key={user.id} value={user.id}>
                       {`${user.prenom ?? ""} ${user.nom}`.trim()} - {user.email}
                     </option>
@@ -131,9 +134,7 @@ export function ManagerProjectsPage() {
             </div>
           </section>
 
-          <div className="rounded-lg bg-white p-6 shadow-sm ring-1 ring-[#E5E7EB]">
-            <ProjectTable projects={projectsQuery.data ?? []} loading={projectsQuery.isLoading} />
-          </div>
+          <ProjectTable projects={unassignedProjects} loading={projectsQuery.isLoading} />
         </div>
       </div>
     </main>

@@ -51,7 +51,7 @@ export function ComptableBudgetsPage({ view = "budgets" }: { view?: "budgets" | 
       <div className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto grid max-w-7xl gap-6">
           <header className="rounded-lg bg-white p-6 text-left shadow-sm ring-1 ring-[#E5E7EB]">
-            <p className="text-sm font-semibold uppercase tracking-wide text-[#2563EB]">Execution budgetaire</p>
+            <p className="text-sm font-semibold uppercase tracking-wide text-[#15803D]">Execution budgetaire</p>
             <h1 className="mt-2 text-3xl font-bold text-[#1F2937]">{titles[view]}</h1>
             <p className="mt-2 text-sm text-[#6B7280]">Selectionnez un budget pour consulter le realise, enregistrer les mouvements et suivre les ecarts.</p>
           </header>
@@ -97,7 +97,7 @@ export function ComptableBudgetsPage({ view = "budgets" }: { view?: "budgets" | 
                         <td className="px-4 py-3 text-[#6B7280]">{budget.projet?.date_debut_prevue ?? "-"} au {budget.projet?.date_fin_prevue ?? "-"}</td>
                         <td className="px-4 py-3 text-[#6B7280]">{budget.projet?.date_debut_prevue ?? "-"} au {budget.projet?.date_fin_prevue ?? "-"}</td>
                         <td className="px-4 py-3">
-                          <Link className="font-semibold text-[#2563EB] hover:text-[#1D4ED8]" to={`/comptable/budgets/${budget.id}`}>
+                          <Link className="font-semibold text-[#15803D] hover:text-[#166F48]" to={`/comptable/budgets/${budget.id}`}>
                             {actionLabels[view]}
                           </Link>
                         </td>

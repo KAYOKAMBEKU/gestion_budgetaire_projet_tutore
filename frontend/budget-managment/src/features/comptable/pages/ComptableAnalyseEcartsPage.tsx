@@ -22,13 +22,7 @@ function getBudgetLabel(budget: Budget) {
   return `${budget.projet?.titre ?? `Projet ${budget.projet_id ?? budget.id}`} - ${budget.reference}`;
 }
 
-function getEcartTone(amount: number) {
-  if (amount > 0) {
-    return "text-[#DC2626]";
-  }
-  if (amount < 0) {
-    return "text-[#15803D]";
-  }
+function getEcartTone(_amount: number) {
   return "text-[#1F2937]";
 }
 
@@ -74,7 +68,7 @@ export function ComptableAnalyseEcartsPage() {
       <div className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto grid max-w-7xl gap-6">
           <header className="rounded-lg bg-white p-6 text-left shadow-sm ring-1 ring-[#E5E7EB]">
-            <p className="text-sm font-semibold uppercase tracking-wide text-[#2563EB]">Controle budgetaire</p>
+            <p className="text-sm font-semibold uppercase tracking-wide text-[#15803D]">Controle budgetaire</p>
             <h1 className="mt-2 text-3xl font-bold text-[#1F2937]">Analyse des ecarts</h1>
             <p className="mt-2 text-sm text-[#6B7280]">Comparez le budget previsionnel aux realisations calculees depuis les mouvements financiers.</p>
           </header>
@@ -142,7 +136,7 @@ export function ComptableAnalyseEcartsPage() {
                 </div>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Recettes realisees</p>
-                  <p className="mt-1 font-bold text-[#15803D]">{formatAmount(execution?.total_recettes_realisees ?? 0)}</p>
+                  <p className="mt-1 font-bold text-[#1F2937]">{formatAmount(execution?.total_recettes_realisees ?? 0)}</p>
                 </div>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Depenses prevues</p>
@@ -150,7 +144,7 @@ export function ComptableAnalyseEcartsPage() {
                 </div>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Depenses realisees</p>
-                  <p className="mt-1 font-bold text-[#DC2626]">{formatAmount(execution?.total_depenses_realisees ?? 0)}</p>
+                  <p className="mt-1 font-bold text-[#1F2937]">{formatAmount(execution?.total_depenses_realisees ?? 0)}</p>
                 </div>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Solde previsionnel</p>
@@ -231,4 +225,3 @@ export function ComptableAnalyseEcartsPage() {
     </main>
   );
 }
-

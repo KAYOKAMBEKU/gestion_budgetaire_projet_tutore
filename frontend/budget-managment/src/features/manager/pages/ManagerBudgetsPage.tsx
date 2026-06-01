@@ -166,75 +166,78 @@ export function ManagerBudgetsPage({ analysisOnly = false }: { analysisOnly?: bo
           </section>
         </div>
       </div>
-      <PopupModal maxWidth="max-w-5xl" open={Boolean(selectedDetails)} title="Details du budget" onClose={() => setSelectedDetails(null)}>
+      <PopupModal maxWidth="max-w-7xl" open={Boolean(selectedDetails)} title="Details du budget" onClose={() => setSelectedDetails(null)}>
         {selectedDetails ? (
           <div className="grid gap-5">
-            <section className="grid gap-3 border border-[#0F3D5E] p-4 md:grid-cols-3">
-              <div>
+            <section className="grid gap-4 rounded-lg bg-[#F9FAFB] p-4 ring-1 ring-[#E5E7EB] md:grid-cols-3">
+              <div className="rounded-md bg-white p-4 shadow-sm ring-1 ring-[#E5E7EB]">
                 <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Budget</p>
                 <p className="mt-1 font-bold text-[#1F2937]">{selectedDetails.budget.libelle}</p>
                 <p className="text-xs text-[#6B7280]">{selectedDetails.budget.reference}</p>
               </div>
-              <div>
+              <div className="rounded-md bg-white p-4 shadow-sm ring-1 ring-[#E5E7EB]">
                 <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Projet</p>
                 <p className="mt-1 font-bold text-[#1F2937]">{selectedDetails.project?.titre ?? selectedDetails.budget.projet?.titre ?? "-"}</p>
                 <p className="text-xs text-[#6B7280]">{selectedDetails.project?.code ?? selectedDetails.budget.projet?.code ?? ""}</p>
               </div>
-              <div>
+              <div className="rounded-md bg-white p-4 shadow-sm ring-1 ring-[#E5E7EB]">
                 <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Statut</p>
                 <span className={`mt-1 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${budgetStatusTones[selectedDetails.budget.statut]}`}>{budgetStatusLabels[selectedDetails.budget.statut]}</span>
               </div>
-              <div>
+              <div className="rounded-md bg-white p-4 shadow-sm ring-1 ring-[#E5E7EB]">
                 <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Chef de projet</p>
                 <p className="mt-1 font-semibold text-[#1F2937]">{selectedDetails.project?.chef_projet ? `${selectedDetails.project.chef_projet.prenom ?? ""} ${selectedDetails.project.chef_projet.nom}`.trim() : "-"}</p>
                 <p className="text-xs text-[#6B7280]">{selectedDetails.project?.chef_projet?.email ?? ""}</p>
               </div>
-              <div>
+              <div className="rounded-md bg-white p-4 shadow-sm ring-1 ring-[#E5E7EB]">
                 <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Exercice</p>
                 <p className="mt-1 font-semibold text-[#1F2937]">{selectedDetails.budget.exercice?.libelle ?? selectedDetails.budget.exercice_id}</p>
               </div>
-              <div>
+              <div className="rounded-md bg-white p-4 shadow-sm ring-1 ring-[#E5E7EB]">
                 <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Date de soumission</p>
                 <p className="mt-1 font-semibold text-[#1F2937]">{selectedDetails.budget.date_creation ? new Date(selectedDetails.budget.date_creation).toLocaleDateString("fr-FR") : "-"}</p>
               </div>
             </section>
 
             <section className="grid gap-3 sm:grid-cols-3">
-              <div className="border border-[#0F3D5E] p-4">
+              <div className="rounded-md bg-[#F9FAFB] p-4 ring-1 ring-[#E5E7EB]">
                 <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Depenses prevues</p>
-                <p className="mt-2 font-bold text-[#0F3D5E]">{formatAmount(sumByType(selectedDetails.lignes, "depense"))}</p>
+                <p className="mt-2 text-xl font-bold text-[#0F3D5E]">{formatAmount(sumByType(selectedDetails.lignes, "depense"))}</p>
               </div>
-              <div className="border border-[#0F3D5E] p-4">
+              <div className="rounded-md bg-[#F9FAFB] p-4 ring-1 ring-[#E5E7EB]">
                 <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Recettes prevues</p>
-                <p className="mt-2 font-bold text-[#0F3D5E]">{formatAmount(sumByType(selectedDetails.lignes, "recette"))}</p>
+                <p className="mt-2 text-xl font-bold text-[#15803D]">{formatAmount(sumByType(selectedDetails.lignes, "recette"))}</p>
               </div>
-              <div className="border border-[#0F3D5E] p-4">
+              <div className="rounded-md bg-[#F9FAFB] p-4 ring-1 ring-[#E5E7EB]">
                 <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Total realise</p>
-                <p className="mt-2 font-bold text-[#0F3D5E]">{formatAmount(selectedDetails.budget.montant_total_realise ?? 0)}</p>
+                <p className="mt-2 text-xl font-bold text-[#1F2937]">{formatAmount(selectedDetails.budget.montant_total_realise ?? 0)}</p>
               </div>
             </section>
 
-            <section>
-              <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-[#1F2937]">Lignes budgetaires</h3>
-              <div className="max-w-full overflow-x-auto">
-                <table className="min-w-[760px] text-left text-sm">
-                  <thead>
-                    <tr>
-                      <th className="px-4 py-3">Libelle</th>
+            <section className="rounded-lg bg-white shadow-sm ring-1 ring-[#E5E7EB]">
+              <div className="flex flex-col gap-1 border-b border-[#E5E7EB] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <h3 className="text-sm font-bold uppercase tracking-wide text-[#1F2937]">Lignes budgetaires</h3>
+                <p className="text-xs font-medium text-[#6B7280]">{selectedDetails.lignes.length} ligne(s)</p>
+              </div>
+              <div className="w-full overflow-x-auto">
+                <table className="w-full min-w-[920px] text-left text-sm">
+                  <thead className="bg-[#F9FAFB] text-xs uppercase tracking-wide text-[#374151]">
+                    <tr className="border-b border-[#E5E7EB]">
+                      <th className="w-[32%] px-4 py-3">Libelle</th>
                       <th className="px-4 py-3">Type</th>
                       <th className="px-4 py-3">Categorie</th>
-                      <th className="px-4 py-3">Prevu</th>
-                      <th className="px-4 py-3">Realise</th>
+                      <th className="px-4 py-3 text-right">Prevu</th>
+                      <th className="px-4 py-3 text-right">Realise</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-[#E5E7EB]">
                     {selectedDetails.lignes.map((ligne) => (
-                      <tr key={ligne.id}>
+                      <tr key={ligne.id} className="hover:bg-[#F9FAFB]">
                         <td className="px-4 py-3 font-semibold text-[#1F2937]">{ligne.libelle}</td>
                         <td className="px-4 py-3 capitalize text-[#6B7280]">{ligne.type_ligne}</td>
                         <td className="px-4 py-3 text-[#6B7280]">{ligne.categorie?.nom ?? ligne.categorie_id}</td>
-                        <td className="px-4 py-3 font-semibold text-[#1F2937]">{formatAmount(ligne.montant_prevu)}</td>
-                        <td className="px-4 py-3 text-[#6B7280]">{formatAmount(ligne.montant_realise ?? 0)}</td>
+                        <td className="px-4 py-3 text-right font-semibold text-[#1F2937]">{formatAmount(ligne.montant_prevu)}</td>
+                        <td className="px-4 py-3 text-right font-semibold text-[#6B7280]">{formatAmount(ligne.montant_realise ?? 0)}</td>
                       </tr>
                     ))}
                   </tbody>

@@ -49,7 +49,7 @@ export function ComptableDashboardPage() {
       <div className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto grid max-w-7xl gap-6">
           <header className="rounded-lg bg-white p-6 text-left shadow-sm ring-1 ring-[#E5E7EB]">
-            <p className="text-sm font-semibold uppercase tracking-wide text-[#3B82F6]">Espace comptable</p>
+            <p className="text-sm font-semibold uppercase tracking-wide text-[#15803D]">Espace comptable</p>
             <h1 className="mt-2 text-3xl font-bold text-[#1F2937]">Tableau de bord</h1>
             <p className="mt-2 text-sm text-[#6B7280]">Suivi des budgets en execution et des mouvements financiers reels.</p>
           </header>
@@ -58,25 +58,25 @@ export function ComptableDashboardPage() {
           {executionsQuery.isError ? <div className="rounded-lg border border-[#FECACA] bg-[#FEE2E2] px-4 py-3 text-sm font-medium text-[#DC2626]">{getApiErrorMessage(executionsQuery.error)}</div> : null}
 
           <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-            <div className="rounded-lg bg-[#DBEAFE] p-5 shadow-sm ring-1 ring-[#BFDBFE]">
-              <p className="text-xs font-semibold uppercase tracking-wide text-[#2563EB]">Budgets en execution</p>
-              <p className="mt-3 text-3xl font-bold text-[#1D4ED8]">{executableBudgets.length}</p>
+            <div className="rounded-lg bg-white p-5 shadow-sm ring-1 ring-[#E5E7EB]">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Budgets en execution</p>
+              <p className="mt-3 text-3xl font-bold text-[#1F2937]">{executableBudgets.length}</p>
             </div>
-            <div className="rounded-lg bg-[#DCFCE7] p-5 shadow-sm ring-1 ring-[#BBF7D0]">
-              <p className="text-xs font-semibold uppercase tracking-wide text-[#16A34A]">Entrees reelles</p>
-              <p className="mt-3 text-xl font-bold text-[#15803D]">{formatAmount(totalEntrees)}</p>
+            <div className="rounded-lg bg-white p-5 shadow-sm ring-1 ring-[#E5E7EB]">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Entrees reelles</p>
+              <p className="mt-3 text-xl font-bold text-[#1F2937]">{formatAmount(totalEntrees)}</p>
             </div>
-            <div className="rounded-lg bg-[#FEE2E2] p-5 shadow-sm ring-1 ring-[#FECACA]">
-              <p className="text-xs font-semibold uppercase tracking-wide text-[#DC2626]">Sorties reelles</p>
-              <p className="mt-3 text-xl font-bold text-[#B91C1C]">{formatAmount(totalSorties)}</p>
+            <div className="rounded-lg bg-white p-5 shadow-sm ring-1 ring-[#E5E7EB]">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Sorties reelles</p>
+              <p className="mt-3 text-xl font-bold text-[#1F2937]">{formatAmount(totalSorties)}</p>
             </div>
             <div className="rounded-lg bg-[#F9FAFB] p-5 shadow-sm ring-1 ring-[#E5E7EB]">
               <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Solde realise</p>
               <p className="mt-3 text-xl font-bold text-[#1F2937]">{formatAmount(totalEntrees - totalSorties)}</p>
             </div>
-            <div className="rounded-lg bg-[#FEF3C7] p-5 shadow-sm ring-1 ring-[#FDE68A]">
-              <p className="text-xs font-semibold uppercase tracking-wide text-[#D97706]">Proches depassement</p>
-              <p className="mt-3 text-3xl font-bold text-[#B45309]">{nearOverspend.length}</p>
+            <div className="rounded-lg bg-white p-5 shadow-sm ring-1 ring-[#E5E7EB]">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Proches depassement</p>
+              <p className="mt-3 text-3xl font-bold text-[#1F2937]">{nearOverspend.length}</p>
             </div>
           </section>
 
@@ -85,8 +85,8 @@ export function ComptableDashboardPage() {
               <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
                 <h2 className="text-lg font-bold text-[#1F2937]">Mouvements recents</h2>
                 <div className="flex gap-2">
-                  <Link className="btn-success rounded-md px-3 py-2 text-sm font-semibold" to="/comptable/entrees">Entree</Link>
-                  <Link className="btn-danger rounded-md px-3 py-2 text-sm font-semibold" to="/comptable/sorties">Sortie</Link>
+                  <Link className="rounded-md border border-[#E5E7EB] px-3 py-2 text-sm font-semibold text-[#374151] hover:bg-[#F4F7FA]" to="/comptable/mouvements">Voir tout</Link>
+                  <Link className="btn-primary rounded-md px-3 py-2 text-sm font-semibold" to="/comptable/budgets">Executer</Link>
                 </div>
               </div>
               <div className="mt-4 overflow-hidden border border-[#E5E7EB]">
