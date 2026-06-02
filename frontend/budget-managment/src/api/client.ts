@@ -46,3 +46,5 @@ export function getApiErrorMessage(error: unknown): string {
 
   return "Une erreur inattendue est survenue.";
 }
+
+// Exporter une fonction pour vérifier si l'utilisateur est authentifié
