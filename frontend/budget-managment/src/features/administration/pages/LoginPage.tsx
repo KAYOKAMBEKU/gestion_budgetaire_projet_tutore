@@ -96,12 +96,6 @@ export function LoginPage() {
             {loading ? "Connexion..." : "Se connecter"}
           </button>
         </form>
-        <p className="mt-4 text-xs text-[#6B7280]">
-          Admin: admin@example.com / Admin12345
-        </p>
-        <p className="mt-1 text-xs text-[#6B7280]">
-          Gestionnaire: gestionnaire.finance@example.com / Gestionnaire123
-        </p>
       </section>
     </main>
   );
