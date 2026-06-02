@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: gestion-budgetaire-backend
+    env: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: sh start.sh
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: gestion-budgetaire-db
+          property: connectionString
+
+databases:
+  - name: gestion-budgetaire-db
+    databaseName: gestion_budgetaire_db

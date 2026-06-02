@@ -21,9 +21,11 @@ project_root = os.path.dirname(os.path.dirname(__file__))
 sys.path.insert(0, project_root)
 
 from app.database import Base
+from app.config import settings
 import app.models  # noqa: F401
 
 target_metadata = Base.metadata
+config.set_main_option("sqlalchemy.url", settings.database_url.replace("%", "%%"))
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
