@@ -6,6 +6,7 @@ import { ProjectStatusBadge } from "../components/ProjectStatusBadge";
 import { ValidateProjectModal } from "../components/ValidateProjectModal";
 import { RejectProjectModal } from "../components/RejectProjectModal";
 import { useProject, useValidateProject, useRejectProject } from "../hooks/useManagerProjects";
+import { formatDate } from "../../../utils/formatDate";
 
 function AccessMessage({ title, message }: { title: string; message: string }) {
   return (
@@ -148,18 +149,14 @@ export function ManagerProjectDetailPage({ readOnly = false }: { readOnly?: bool
               <div>
                 <h3 className="text-sm font-semibold uppercase tracking-wide text-[#6B7280]">Date de début prévue</h3>
                 <p className="mt-2 text-[#1F2937]">
-                  {project.date_debut_prevue
-                    ? new Date(project.date_debut_prevue).toLocaleDateString("fr-FR")
-                    : "Non spécifiée"}
+                  {formatDate(project.date_debut_prevue, "Non spécifiée")}
                 </p>
               </div>
 
               <div>
                 <h3 className="text-sm font-semibold uppercase tracking-wide text-[#6B7280]">Date de fin prévue</h3>
                 <p className="mt-2 text-[#1F2937]">
-                  {project.date_fin_prevue
-                    ? new Date(project.date_fin_prevue).toLocaleDateString("fr-FR")
-                    : "Non spécifiée"}
+                  {formatDate(project.date_fin_prevue, "Non spécifiée")}
                 </p>
               </div>
             </div>

@@ -5,6 +5,7 @@ import { useAppDispatch } from "../../../../store";
 import { showToast } from "../../../../store/slices/uiSlice";
 import type { Budget } from "../../../../types/budget";
 import type { ExerciceBudgetaire, ExerciceBudgetaireCreate, ExerciceBudgetaireUpdate } from "../../../../types/exerciceBudgetaire";
+import { formatDateRange } from "../../../../utils/formatDate";
 import { formatAmount } from "../../../manager/utils/formatAmount";
 import { useValidatedBudgets } from "../../hooks/useBudgetValidation";
 import {
@@ -72,7 +73,7 @@ export function ExerciceBudgetaireList() {
 
   const columns: DataTableColumn<ExerciceBudgetaire>[] = [
     { key: "libelle", label: "Exercice", render: (exercice) => <span className="font-semibold text-[#1F2937]">{exercice.libelle}</span> },
-    { key: "dates", label: "Periode", render: (exercice) => `${exercice.date_debut} au ${exercice.date_fin}` },
+    { key: "dates", label: "Periode", render: (exercice) => formatDateRange(exercice.date_debut, exercice.date_fin) },
     { key: "statut", label: "Statut", render: (exercice) => <StatusBadge status={exercice.statut} /> },
     {
       key: "budgets-valides",

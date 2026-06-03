@@ -20,6 +20,15 @@ export function BudgetLineForm({ categories, onAdd, onError }: BudgetLineFormPro
 
   const filteredCategories = useMemo(() => categories.filter((category) => category.type_categorie === typeLigne), [categories, typeLigne]);
 
+  function updateComputedAmount(nextQuantity: string, nextCost: string) {
+    if (!nextQuantity || !nextCost) {
+      setMontantPrevu("");
+      return;
+    }
+
+    setMontantPrevu(String(Number(nextQuantity) * Number(nextCost)));
+  }
+
   function handleTypeChange(value: TypeLigneBudgetaire) {
     setTypeLigne(value);
     setCategorieId("");
@@ -79,7 +88,7 @@ export function BudgetLineForm({ categories, onAdd, onError }: BudgetLineFormPro
         </label>
         <label className="text-sm font-medium text-[#374151]">
           Montant prevu *
-          <input className="input-field" min={0} required step="0.01" type="number" value={montantPrevu} onChange={(event) => setMontantPrevu(event.target.value)} />
+          <input className="input-field disabled:bg-[#F3F4F6] disabled:text-[#6B7280]" disabled min={0} step="0.01" type="number" value={montantPrevu} />
         </label>
       </div>
       <div className="mt-4 grid gap-4 md:grid-cols-3">
@@ -88,36 +97,34 @@ export function BudgetLineForm({ categories, onAdd, onError }: BudgetLineFormPro
           <input className="input-field" required value={libelle} onChange={(event) => setLibelle(event.target.value)} />
         </label>
         <label className="text-sm font-medium text-[#374151]">
-          Quantite
+          Quantite *
           <input
             className="input-field"
             min={0}
+            required
             step="0.01"
             type="number"
             value={quantite}
             onChange={(event) => {
               const nextQuantity = event.target.value;
               setQuantite(nextQuantity);
-              if (nextQuantity && coutUnitaire) {
-                setMontantPrevu(String(Number(nextQuantity) * Number(coutUnitaire)));
-              }
+              updateComputedAmount(nextQuantity, coutUnitaire);
             }}
           />
         </label>
         <label className="text-sm font-medium text-[#374151]">
-          Cout unitaire
+          Cout unitaire *
           <input
             className="input-field"
             min={0}
+            required
             step="0.01"
             type="number"
             value={coutUnitaire}
             onChange={(event) => {
               const nextCost = event.target.value;
               setCoutUnitaire(nextCost);
-              if (quantite && nextCost) {
-                setMontantPrevu(String(Number(quantite) * Number(nextCost)));
-              }
+              updateComputedAmount(quantite, nextCost);
             }}
           />
         </label>

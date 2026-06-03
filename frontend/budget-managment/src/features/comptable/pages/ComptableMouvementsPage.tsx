@@ -5,6 +5,7 @@ import { getApiErrorMessage } from "../../../api/client";
 import { useAuth } from "../../../context/AuthContext";
 import { mouvementFinancierService } from "../../../services/mouvementFinancierService";
 import type { TypeMouvementFinancier } from "../../../types/mouvementFinancier";
+import { formatDate } from "../../../utils/formatDate";
 import { formatAmount } from "../../manager/utils/formatAmount";
 import { ComptableSidebar } from "../components/ComptableSidebar";
 import { useExecutableBudgets } from "../hooks/useComptableBudget";
@@ -125,7 +126,7 @@ export function ComptableMouvementsPage() {
 
                         return (
                           <tr className="border-b border-[#E5E7EB] hover:bg-[#F4F7FA]" key={mouvement.id}>
-                            <td className="px-4 py-3 text-[#6B7280]">{mouvement.date_mouvement}</td>
+                            <td className="px-4 py-3 text-[#6B7280]">{formatDate(mouvement.date_mouvement)}</td>
                             <td className="px-4 py-3">
                               <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${isEntree ? "bg-[#DCFCE7] text-[#166F48] ring-[#BBF7D0]" : "bg-[#FEE2E2] text-[#B91C1C] ring-[#FECACA]"}`}>
                                 {isEntree ? "Entree" : "Sortie"}

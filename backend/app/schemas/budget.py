@@ -11,9 +11,10 @@ from .user import UserSimpleResponse
 
 
 class BudgetBase(BaseModel):
-    reference: str = Field(..., min_length=2, max_length=100)
+    reference: Optional[str] = Field(None, min_length=2, max_length=100)
     libelle: str = Field(..., min_length=2, max_length=150)
     description: Optional[str] = None
+    devise: str = Field("FC", pattern="^(FC|USD)$", max_length=3)
     montant_total_prevu: Optional[Decimal] = Field(None, ge=0)
     montant_total_realise: Optional[Decimal] = Field(None, ge=0)
     total_recettes_realisees: Optional[Decimal] = Field(None, ge=0)

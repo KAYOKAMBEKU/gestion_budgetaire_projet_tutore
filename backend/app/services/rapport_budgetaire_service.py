@@ -44,8 +44,13 @@ def _decimal(value) -> Decimal:
     return Decimal(value or 0)
 
 
-def _money(value: Decimal) -> str:
-    return f"{value:,.2f} FCFA".replace(",", " ")
+def _budget_devise(budget: Budget) -> str:
+    return "USD" if budget.devise == "USD" else "FC"
+
+
+def _money(value: Decimal, devise: str = "FC") -> str:
+    suffix = "USD" if devise == "USD" else "FC"
+    return f"{value:,.2f} {suffix}".replace(",", " ")
 
 
 def _paragraph(text, style):
@@ -196,6 +201,7 @@ def _budget_report_rows(db: Session):
         rows.append(
             {
                 "budget": budget,
+                "devise": _budget_devise(budget),
                 "departement": budget.departement.nom if budget.departement else f"Departement {budget.departement_id}",
                 "exercice": budget.exercice.libelle if budget.exercice else f"Exercice {budget.exercice_id}",
                 "projet": budget.projet.titre if budget.projet else str(budget.projet_id or "-"),
@@ -219,49 +225,77 @@ def generate_admin_budget_report_pdf(db: Session, type_rapport: str = "general")
     rows = _budget_report_rows(db)
     title = REPORT_OUTPUT_LABELS[type_rapport]
     now = datetime.now().strftime("%d/%m/%Y %H:%M")
-    total_prevu = sum(row["prevu"] for row in rows)
-    total_realise = sum(row["realise"] for row in rows)
-    total_recettes_prevues = sum(row["recettes_prevues"] for row in rows)
-    total_recettes_realisees = sum(row["recettes_realisees"] for row in rows)
-    total_depenses_prevues = sum(row["depenses_prevues"] for row in rows)
-    total_depenses_realisees = sum(row["depenses_realisees"] for row in rows)
-    taux_global = (total_realise / total_prevu * Decimal("100")) if total_prevu > 0 else Decimal("0")
+    totals_by_devise = {}
+    for row in rows:
+        totals = totals_by_devise.setdefault(
+            row["devise"],
+            {
+                "prevu": Decimal("0"),
+                "realise": Decimal("0"),
+                "recettes_prevues": Decimal("0"),
+                "recettes_realisees": Decimal("0"),
+                "depenses_prevues": Decimal("0"),
+                "depenses_realisees": Decimal("0"),
+            },
+        )
+        totals["prevu"] += row["prevu"]
+        totals["realise"] += row["realise"]
+        totals["recettes_prevues"] += row["recettes_prevues"]
+        totals["recettes_realisees"] += row["recettes_realisees"]
+        totals["depenses_prevues"] += row["depenses_prevues"]
+        totals["depenses_realisees"] += row["depenses_realisees"]
 
-    summary_rows = [
-        ["Budgets analyses", str(len(rows))],
-        ["Total previsionnel", _money(total_prevu)],
-        ["Total realise", _money(total_realise)],
-        ["Ecart global", _money(total_realise - total_prevu)],
-        ["Taux execution global", f"{taux_global:.2f}%"],
-        ["Recettes prevues / realisees", f"{_money(total_recettes_prevues)} / {_money(total_recettes_realisees)}"],
-        ["Depenses prevues / realisees", f"{_money(total_depenses_prevues)} / {_money(total_depenses_realisees)}"],
+    summary_rows = [["Budgets analyses", str(len(rows))]]
+    risk_rows = [
+        row
+        for row in rows
+        if row["depenses_prevues"] > 0 and (row["depenses_realisees"] / row["depenses_prevues"] * Decimal("100")) >= Decimal("90")
     ]
+    summary_rows.append(["Alertes grand risque de depassement", str(len(risk_rows))])
+    for devise in ("FC", "USD"):
+        totals = totals_by_devise.get(devise)
+        if totals is None:
+            continue
+        taux = (totals["realise"] / totals["prevu"] * Decimal("100")) if totals["prevu"] > 0 else Decimal("0")
+        summary_rows.extend(
+            [
+                [f"Total previsionnel {devise}", _money(totals["prevu"], devise)],
+                [f"Total realise {devise}", _money(totals["realise"], devise)],
+                [f"Ecart global {devise}", _money(totals["realise"] - totals["prevu"], devise)],
+                [f"Taux execution {devise}", f"{taux:.2f}%"],
+                [f"Recettes prevues / realisees {devise}", f"{_money(totals['recettes_prevues'], devise)} / {_money(totals['recettes_realisees'], devise)}"],
+                [f"Depenses prevues / realisees {devise}", f"{_money(totals['depenses_prevues'], devise)} / {_money(totals['depenses_realisees'], devise)}"],
+            ]
+        )
 
     if type_rapport == "departements":
         grouped: dict[str, dict[str, Decimal | int | str]] = {}
         for row in rows:
-            item = grouped.setdefault(row["departement"], {"departement": row["departement"], "budgets": 0, "prevu": Decimal("0"), "realise": Decimal("0")})
+            key = f"{row['departement']}|{row['devise']}"
+            item = grouped.setdefault(key, {"departement": row["departement"], "devise": row["devise"], "budgets": 0, "prevu": Decimal("0"), "realise": Decimal("0")})
             item["budgets"] = int(item["budgets"]) + 1
             item["prevu"] = Decimal(item["prevu"]) + row["prevu"]
             item["realise"] = Decimal(item["realise"]) + row["realise"]
-        detail_headers = ["Departement", "Budgets", "Prevu", "Realise", "Ecart", "Taux"]
+        detail_headers = ["Departement", "Devise", "Budgets", "Prevu", "Realise", "Ecart", "Taux"]
         detail_rows = []
         for item in grouped.values():
             prevu = Decimal(item["prevu"])
             realise = Decimal(item["realise"])
+            devise = str(item["devise"])
             taux = (realise / prevu * Decimal("100")) if prevu > 0 else Decimal("0")
             detail_rows.append(
                 [
                     str(item["departement"]),
+                    devise,
                     str(item["budgets"]),
-                    _money(prevu),
-                    _money(realise),
-                    _money(realise - prevu),
+                    _money(prevu, devise),
+                    _money(realise, devise),
+                    _money(realise - prevu, devise),
                     f"{taux:.2f}%",
                 ]
             )
     else:
-        detail_headers = ["Projet", "Departement", "Exercice", "Statut", "Prevu", "Realise", "Ecart", "Taux", "Interpretation"]
+        detail_headers = ["Projet", "Departement", "Devise", "Exercice", "Statut", "Prevu", "Realise", "Ecart", "Taux", "Interpretation"]
         if type_rapport == "execution":
             detail_headers.extend(["Recettes realisees", "Depenses realisees"])
         if type_rapport == "ecarts":
@@ -273,21 +307,22 @@ def generate_admin_budget_report_pdf(db: Session, type_rapport: str = "general")
             detail_row = [
                 row["projet"],
                 row["departement"],
+                row["devise"],
                 row["exercice"],
                 row["budget"].statut,
-                _money(row["prevu"]),
-                _money(row["realise"]),
-                _money(row["ecart"]),
+                _money(row["prevu"], row["devise"]),
+                _money(row["realise"], row["devise"]),
+                _money(row["ecart"], row["devise"]),
                 f"{row['taux']:.2f}%",
                 interpretation,
             ]
             if type_rapport == "execution":
-                detail_row.extend([_money(row["recettes_realisees"]), _money(row["depenses_realisees"])])
+                detail_row.extend([_money(row["recettes_realisees"], row["devise"]), _money(row["depenses_realisees"], row["devise"])])
             if type_rapport == "ecarts":
                 detail_row.extend(
                     [
-                        _money(row["recettes_realisees"] - row["recettes_prevues"]),
-                        _money(row["depenses_realisees"] - row["depenses_prevues"]),
+                        _money(row["recettes_realisees"] - row["recettes_prevues"], row["devise"]),
+                        _money(row["depenses_realisees"] - row["depenses_prevues"], row["devise"]),
                     ]
                 )
             detail_rows.append(detail_row)

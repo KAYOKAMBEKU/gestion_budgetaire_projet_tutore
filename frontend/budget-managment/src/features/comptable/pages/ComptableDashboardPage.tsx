@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { getApiErrorMessage } from "../../../api/client";
 import { useAuth } from "../../../context/AuthContext";
 import { budgetAnalyticsService } from "../../../services/budgetAnalyticsService";
+import { formatDate } from "../../../utils/formatDate";
+import { formatCurrencyTotals, getExecutionRiskAlerts, emptyCurrencyTotals, currencies } from "../../manager/utils/budgetCurrency";
 import { formatAmount } from "../../manager/utils/formatAmount";
 import { ComptableSidebar } from "../components/ComptableSidebar";
 import { useExecutableBudgets } from "../hooks/useComptableBudget";
@@ -28,10 +30,22 @@ export function ComptableDashboardPage() {
     queryFn: () => budgetAnalyticsService.getExecutionByBudgetIds(executableBudgets.map((budget) => budget.id)),
   });
   const executions = Object.values(executionsQuery.data ?? {});
-  const totalEntrees = executions.reduce((sum, execution) => sum + Number(execution.total_recettes_realisees ?? 0), 0);
-  const totalSorties = executions.reduce((sum, execution) => sum + Number(execution.total_depenses_realisees ?? 0), 0);
+  const totalsByCurrency = currencies.map((currency) => {
+    const total = emptyCurrencyTotals(currency);
+    for (const execution of executions) {
+      if ((execution.devise === "USD" ? "USD" : "FC") !== currency) {
+        continue;
+      }
+      total.count += 1;
+      total.recettesRealisees += Number(execution.total_recettes_realisees ?? 0);
+      total.depensesRealisees += Number(execution.total_depenses_realisees ?? 0);
+      total.realise += Number(execution.montant_realise_total ?? 0);
+      total.prevu += Number(execution.budget_previsionnel ?? 0);
+    }
+    return total;
+  });
   const mouvements = executions.flatMap((execution) => execution.mouvements_financiers ?? []).sort((a, b) => b.date_mouvement.localeCompare(a.date_mouvement)).slice(0, 6);
-  const nearOverspend = executions.filter((execution) => Number(execution.taux_execution_depenses ?? 0) >= 90);
+  const nearOverspend = getExecutionRiskAlerts(executions);
 
   if (authLoading) {
     return <main className="grid min-h-screen place-items-center bg-[#F4F7FA] text-sm font-semibold text-[#6B7280]">Verification de la session...</main>;
@@ -64,15 +78,15 @@ export function ComptableDashboardPage() {
             </div>
             <div className="rounded-lg bg-white p-5 shadow-sm ring-1 ring-[#E5E7EB]">
               <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Entrees reelles</p>
-              <p className="mt-3 text-xl font-bold text-[#1F2937]">{formatAmount(totalEntrees)}</p>
+              <p className="mt-3 text-xl font-bold text-[#1F2937]">{formatCurrencyTotals(totalsByCurrency, (total) => total.recettesRealisees)}</p>
             </div>
             <div className="rounded-lg bg-white p-5 shadow-sm ring-1 ring-[#E5E7EB]">
               <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Sorties reelles</p>
-              <p className="mt-3 text-xl font-bold text-[#1F2937]">{formatAmount(totalSorties)}</p>
+              <p className="mt-3 text-xl font-bold text-[#1F2937]">{formatCurrencyTotals(totalsByCurrency, (total) => total.depensesRealisees)}</p>
             </div>
             <div className="rounded-lg bg-[#F9FAFB] p-5 shadow-sm ring-1 ring-[#E5E7EB]">
               <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Solde realise</p>
-              <p className="mt-3 text-xl font-bold text-[#1F2937]">{formatAmount(totalEntrees - totalSorties)}</p>
+              <p className="mt-3 text-xl font-bold text-[#1F2937]">{formatCurrencyTotals(totalsByCurrency, (total) => total.recettesRealisees - total.depensesRealisees)}</p>
             </div>
             <div className="rounded-lg bg-white p-5 shadow-sm ring-1 ring-[#E5E7EB]">
               <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Proches depassement</p>
@@ -105,7 +119,7 @@ export function ComptableDashboardPage() {
                         <tr><td className="px-4 py-8 text-center text-[#6B7280]" colSpan={4}>Aucun mouvement recent.</td></tr>
                       ) : mouvements.map((mouvement) => (
                         <tr className="border-b border-[#E5E7EB] hover:bg-[#F4F7FA]" key={mouvement.id}>
-                          <td className="px-4 py-3 text-[#6B7280]">{mouvement.date_mouvement}</td>
+                          <td className="px-4 py-3 text-[#6B7280]">{formatDate(mouvement.date_mouvement)}</td>
                           <td className="px-4 py-3 capitalize text-[#6B7280]">{mouvement.type_mouvement}</td>
                           <td className="px-4 py-3 font-semibold text-[#1F2937]">{mouvement.libelle}</td>
                           <td className="px-4 py-3 font-bold text-[#1F2937]">{formatAmount(mouvement.montant)}</td>
@@ -122,9 +136,9 @@ export function ComptableDashboardPage() {
               <div className="mt-4 grid gap-3">
                 {nearOverspend.length === 0 ? (
                   <p className="rounded-lg bg-[#DCFCE7] px-4 py-3 text-sm font-medium text-[#16A34A]">Aucun budget proche du depassement.</p>
-                ) : nearOverspend.map((execution) => (
-                  <Link className="rounded-lg border border-[#FDE68A] bg-[#FEF3C7] px-4 py-3 text-sm font-semibold text-[#92400E]" key={execution.budget_id} to={`/comptable/budgets/${execution.budget_id}`}>
-                    Budget {execution.budget_id} : {Number(execution.taux_execution_depenses ?? 0).toFixed(2)}% execute
+                ) : nearOverspend.map((alert) => (
+                  <Link className={`rounded-lg border px-4 py-3 text-sm font-semibold ${alert.level === "danger" ? "border-[#FCA5A5] bg-[#FEE2E2] text-[#B91C1C]" : "border-[#FDE68A] bg-[#FEF3C7] text-[#92400E]"}`} key={alert.budgetId} to={`/comptable/budgets/${alert.budgetId}`}>
+                    {alert.label} : {alert.taux.toFixed(2)}% execute, {formatAmount(alert.realise, alert.currency)} sur {formatAmount(alert.prevu, alert.currency)}
                   </Link>
                 ))}
               </div>

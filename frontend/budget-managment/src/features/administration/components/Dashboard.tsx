@@ -5,7 +5,9 @@ import { useActiveExerciceBudgetaire, useExercicesBudgetaires } from "../hooks/u
 import { useRoles } from "../hooks/useRoles";
 import { useUsers } from "../hooks/useUsers";
 import { StatusBadge } from "./StatusBadge";
+import { formatCurrencyTotals, getBudgetRiskAlerts, groupBudgetTotalsByCurrency, type CurrencyTotals } from "../../manager/utils/budgetCurrency";
 import { formatAmount } from "../../manager/utils/formatAmount";
+import { formatDateRange } from "../../../utils/formatDate";
 
 interface StatusChartItem {
   label: string;
@@ -51,46 +53,59 @@ function BudgetStatusChart({ items }: { items: StatusChartItem[] }) {
   );
 }
 
-function GlobalGapChart({ totalPrevu, totalRealise }: { totalPrevu: number; totalRealise: number }) {
-  const ecart = totalRealise - totalPrevu;
-  const base = Math.max(Math.abs(totalPrevu), Math.abs(totalRealise), Math.abs(ecart), 1);
-  const center = 110;
-  const pointX = (value: number) => 24 + (Math.abs(value) / base) * 252;
-  const points = [
-    { x: 24, y: 150, label: "Prevu", value: totalPrevu },
-    { x: pointX(totalRealise), y: 78, label: "Realise", value: totalRealise },
-    { x: pointX(ecart), y: ecart >= 0 ? 38 : 184, label: "Ecart", value: ecart },
-  ];
-  const linePoints = points.map((point) => `${point.x},${point.y}`).join(" ");
-  const isPositiveGap = ecart >= 0;
-
+function CurrencyGapChart({ totals }: { totals: CurrencyTotals[] }) {
   return (
     <div className="card">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold text-[#1F2937]">Evolution des ecarts globaux</p>
-          <p className="mt-1 text-xs text-[#6B7280]">Lecture synthetique entre prevu, realise et ecart.</p>
+          <p className="text-sm font-semibold text-[#1F2937]">Ecarts par devise</p>
+          <p className="mt-1 text-xs text-[#6B7280]">Les budgets FC et USD sont calcules separement.</p>
         </div>
-        <p className={`text-sm font-bold ${isPositiveGap ? "text-[#1F8A5B]" : "text-[#B91C1C]"}`}>{formatAmount(ecart)}</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">FC / USD</p>
       </div>
-      <svg className="mt-5 h-64 w-full" role="img" viewBox="0 0 320 230">
-        <title>Evolution des ecarts globaux</title>
-        <line stroke="#E5E7EB" strokeWidth="1" x1="24" x2="296" y1={center} y2={center} />
-        <polyline fill="none" points={linePoints} stroke="#0F3D5E" strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" />
-        {points.map((point) => (
-          <g key={point.label}>
-            <circle cx={point.x} cy={point.y} fill={point.label === "Ecart" ? (isPositiveGap ? "#1F8A5B" : "#B91C1C") : "#2563EB"} r="7" />
-            <text fill="#4B5563" fontSize="11" fontWeight="700" textAnchor="middle" x={point.x} y={point.y - 14}>
-              {point.label}
-            </text>
-          </g>
-        ))}
-      </svg>
-      <div className="grid gap-2 sm:grid-cols-3">
-        {points.map((point) => (
-          <div className="rounded-md border border-[#1F2937]/50 bg-white/30 px-3 py-2" key={point.label}>
-            <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">{point.label}</p>
-            <p className="mt-1 text-sm font-bold text-[#1F2937]">{formatAmount(point.value)}</p>
+      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        {totals.map((total) => {
+          const ecart = total.realise - total.prevu;
+          const taux = total.prevu > 0 ? (total.realise / total.prevu) * 100 : 0;
+          return (
+            <div className="rounded-md border border-[#1F2937]/20 bg-white/30 px-4 py-3" key={total.currency}>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-bold text-[#1F2937]">{total.currency}</p>
+                <p className={`text-sm font-bold ${ecart > 0 ? "text-[#B91C1C]" : "text-[#1F8A5B]"}`}>{taux.toFixed(2)}%</p>
+              </div>
+              <div className="mt-3 grid gap-2 text-xs">
+                <p className="font-semibold text-[#6B7280]">Prevu: <span className="text-[#1F2937]">{formatAmount(total.prevu, total.currency)}</span></p>
+                <p className="font-semibold text-[#6B7280]">Realise: <span className="text-[#1F2937]">{formatAmount(total.realise, total.currency)}</span></p>
+                <p className="font-semibold text-[#6B7280]">Ecart: <span className={ecart > 0 ? "text-[#B91C1C]" : "text-[#1F8A5B]"}>{formatAmount(ecart, total.currency)}</span></p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function BudgetRiskPanel({ totals, alerts }: { totals: CurrencyTotals[]; alerts: ReturnType<typeof getBudgetRiskAlerts> }) {
+  return (
+    <div className="card">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-sm font-semibold text-[#1F2937]">Alertes budgetaires</p>
+          <p className="mt-1 text-xs text-[#6B7280]">Signalement des budgets a 90% ou plus des depenses prevues.</p>
+        </div>
+        <p className="text-sm font-bold text-[#B45309]">{alerts.length}</p>
+      </div>
+      <div className="mt-4 grid gap-3">
+        <div className="rounded-md bg-[#F9FAFB] px-3 py-2 text-xs font-semibold text-[#6B7280]">
+          Synthese: {formatCurrencyTotals(totals, (total) => total.realise)} realise / {formatCurrencyTotals(totals, (total) => total.prevu)} prevu
+        </div>
+        {alerts.length === 0 ? (
+          <p className="rounded-lg bg-[#DCFCE7] px-4 py-3 text-sm font-medium text-[#16A34A]">Aucun budget en grand risque de depassement.</p>
+        ) : alerts.slice(0, 5).map((alert) => (
+          <div className={`rounded-lg border px-4 py-3 text-sm ${alert.level === "danger" ? "border-[#FCA5A5] bg-[#FEE2E2] text-[#B91C1C]" : "border-[#FDE68A] bg-[#FEF3C7] text-[#92400E]"}`} key={alert.budgetId}>
+            <p className="font-bold">{alert.label}</p>
+            <p className="mt-1 font-semibold">{alert.taux.toFixed(2)}% execute - {formatAmount(alert.realise, alert.currency)} sur {formatAmount(alert.prevu, alert.currency)}</p>
           </div>
         ))}
       </div>
@@ -98,7 +113,7 @@ function GlobalGapChart({ totalPrevu, totalRealise }: { totalPrevu: number; tota
   );
 }
 
-function GlobalTotalsChart({ budgetsCount, isLoading, totalPrevu, totalRealise }: { budgetsCount: number; isLoading: boolean; totalPrevu: number; totalRealise: number }) {
+function GlobalTotalsChart({ budgetsCount, currency, isLoading, totalPrevu, totalRealise }: { budgetsCount: number; currency: CurrencyTotals["currency"]; isLoading: boolean; totalPrevu: number; totalRealise: number }) {
   const maxValue = Math.max(totalPrevu, totalRealise, 1);
   const progress = Math.min((totalRealise / maxValue) * 100, 100);
   const dataStatus = isLoading ? "Chargement" : budgetsCount > 0 ? "Disponible" : "Vide";
@@ -107,7 +122,7 @@ function GlobalTotalsChart({ budgetsCount, isLoading, totalPrevu, totalRealise }
     <div className="card">
       <div>
         <p className="text-sm font-semibold text-[#1F2937]">Vue globale des donnees</p>
-        <p className="mt-1 text-xs text-[#6B7280]">Previsionnel global, realise global et disponibilite des donnees.</p>
+        <p className="mt-1 text-xs text-[#6B7280]">Previsionnel, realise et disponibilite des donnees en {currency}.</p>
       </div>
       <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_140px] lg:items-center">
         <div className="grid gap-4">
@@ -118,7 +133,7 @@ function GlobalTotalsChart({ budgetsCount, isLoading, totalPrevu, totalRealise }
             <div key={item.label}>
               <div className="mb-2 flex items-center justify-between gap-3">
                 <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">{item.label}</p>
-                <p className="text-sm font-bold text-[#1F2937]">{formatAmount(item.value)}</p>
+                <p className="text-sm font-bold text-[#1F2937]">{formatAmount(item.value, currency)}</p>
               </div>
               <div className="h-4 overflow-hidden rounded-full bg-[#E5E7EB]">
                 <div className={`h-full rounded-full ${item.color}`} style={{ width: `${Math.max((item.value / maxValue) * 100, item.value > 0 ? 8 : 0)}%` }} />
@@ -149,8 +164,8 @@ export function Dashboard() {
     queryFn: () => budgetAnalyticsService.getBudgetsByStatuses(),
   });
   const budgets = budgetsQuery.data ?? [];
-  const totalPrevu = budgets.reduce((sum, budget) => sum + Number(budget.montant_total_prevu ?? 0), 0);
-  const totalRealise = budgets.reduce((sum, budget) => sum + Number(budget.montant_total_realise ?? 0), 0);
+  const totalsByCurrency = groupBudgetTotalsByCurrency(budgets);
+  const riskAlerts = getBudgetRiskAlerts(budgets);
   const countByStatus = (statuses: string[]) => budgets.filter((budget) => statuses.includes(budget.statut)).length;
   const statusChartItems: StatusChartItem[] = [
     {
@@ -201,7 +216,7 @@ export function Dashboard() {
             <h3 className="text-lg font-bold text-[#1F2937]">{activeExerciceQuery.data?.libelle ?? "Aucun exercice ouvert"}</h3>
             {activeExerciceQuery.data ? (
               <p className="mt-1 text-sm text-[#6B7280]">
-                {activeExerciceQuery.data.date_debut} au {activeExerciceQuery.data.date_fin}
+                {formatDateRange(activeExerciceQuery.data.date_debut, activeExerciceQuery.data.date_fin)}
               </p>
             ) : null}
           </div>
@@ -210,9 +225,14 @@ export function Dashboard() {
       </div>
       <div className="grid gap-4 xl:grid-cols-2">
         <BudgetStatusChart items={statusChartItems} />
-        <GlobalGapChart totalPrevu={totalPrevu} totalRealise={totalRealise} />
+        <CurrencyGapChart totals={totalsByCurrency} />
       </div>
-      <GlobalTotalsChart budgetsCount={budgets.length} isLoading={budgetsQuery.isLoading} totalPrevu={totalPrevu} totalRealise={totalRealise} />
+      <div className="grid gap-4 xl:grid-cols-2">
+        {totalsByCurrency.map((total) => (
+          <GlobalTotalsChart budgetsCount={total.count} currency={total.currency} isLoading={budgetsQuery.isLoading} key={total.currency} totalPrevu={total.prevu} totalRealise={total.realise} />
+        ))}
+      </div>
+      <BudgetRiskPanel alerts={riskAlerts} totals={totalsByCurrency} />
     </div>
   );
 }

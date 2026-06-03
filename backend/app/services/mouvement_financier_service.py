@@ -10,6 +10,8 @@ from app.models.projet import Projet
 from app.models.user import User
 from app.schemas.mouvement_financier import MouvementFinancierCreate, MouvementFinancierUpdate
 from app.services._utils import decimal_sum, schema_to_dict, update_model
+from datetime import datetime
+import random
 
 ROLE_COMPTABLE = "comptable"
 VALID_TYPES = {"entree", "sortie"}
@@ -41,25 +43,25 @@ def _validate_project_budget(db: Session, projet_id: int, budget_id: int) -> tup
     return projet, budget
 
 
-def _validate_ligne_for_sortie(
+def _validate_ligne_for_mouvement(
     db: Session,
     type_mouvement: str,
     budget_id: int,
     ligne_budgetaire_id: int | None,
-) -> LigneBudgetaire | None:
+) -> LigneBudgetaire:
     if type_mouvement not in VALID_TYPES:
         raise ValueError("type_mouvement doit etre 'entree' ou 'sortie'")
-    if type_mouvement == "entree":
-        return None
     if ligne_budgetaire_id is None:
-        raise ValueError("ligne_budgetaire_id est obligatoire pour une sortie financiere.")
+        raise ValueError("ligne_budgetaire_id est obligatoire pour un mouvement financier.")
     ligne = db.query(LigneBudgetaire).filter(LigneBudgetaire.id == ligne_budgetaire_id).first()
     if ligne is None:
         raise ValueError("Ligne budgetaire introuvable")
     if ligne.budget_id != budget_id:
         raise ValueError("La ligne budgetaire doit appartenir au budget du projet")
-    if ligne.type_ligne != "depense":
+    if type_mouvement == "sortie" and ligne.type_ligne != "depense":
         raise ValueError("Une sortie doit etre rattachee a une ligne budgetaire de type depense")
+    if type_mouvement == "entree" and ligne.type_ligne != "recette":
+        raise ValueError("Une entree doit etre rattachee a une ligne budgetaire de type recette")
     return ligne
 
 
@@ -107,14 +109,25 @@ def _recalculate_ligne_from_mouvements(db: Session, ligne_id: int | None) -> Non
     ligne = db.query(LigneBudgetaire).filter(LigneBudgetaire.id == ligne_id).first()
     if ligne is None:
         return
-    total_sorties = decimal_sum(
-        mouvement.montant
-        for mouvement in db.query(MouvementFinancier).filter(
-            MouvementFinancier.ligne_budgetaire_id == ligne.id,
-            MouvementFinancier.type_mouvement == "sortie",
+    if ligne.type_ligne == "depense":
+        total = decimal_sum(
+            mouvement.montant
+            for mouvement in db.query(MouvementFinancier).filter(
+                MouvementFinancier.ligne_budgetaire_id == ligne.id,
+                MouvementFinancier.type_mouvement == "sortie",
+            )
         )
-    )
-    ligne.montant_realise = total_sorties
+    else:
+        # recette
+        total = decimal_sum(
+            mouvement.montant
+            for mouvement in db.query(MouvementFinancier).filter(
+                MouvementFinancier.ligne_budgetaire_id == ligne.id,
+                MouvementFinancier.type_mouvement == "entree",
+            )
+        )
+
+    ligne.montant_realise = total
     ligne.ecart_montant = Decimal(ligne.montant_realise or 0) - Decimal(ligne.montant_prevu or 0)
     if Decimal(ligne.montant_prevu or 0) > 0:
         ligne.ecart_pourcentage = (ligne.ecart_montant / Decimal(ligne.montant_prevu)) * Decimal("100")
@@ -137,18 +150,23 @@ def recalculate_budget_realisations(db: Session, budget_id: int):
     mouvements = db.query(MouvementFinancier).filter(MouvementFinancier.budget_id == budget.id).all()
     total_recettes = decimal_sum(m.montant for m in mouvements if m.type_mouvement == "entree")
     total_depenses = decimal_sum(m.montant for m in mouvements if m.type_mouvement == "sortie")
-    total_depenses_prevues = decimal_sum(
-        ligne.montant_prevu for ligne in budget.lignes_budgetaires if ligne.type_ligne == "depense"
-    )
+    recettes_prevues = decimal_sum(ligne.montant_prevu for ligne in budget.lignes_budgetaires if ligne.type_ligne == "recette")
+    depenses_prevues = decimal_sum(ligne.montant_prevu for ligne in budget.lignes_budgetaires if ligne.type_ligne == "depense")
     total_prevu = decimal_sum(ligne.montant_prevu for ligne in budget.lignes_budgetaires)
 
     budget.total_recettes_realisees = total_recettes
     budget.total_depenses_realisees = total_depenses
     budget.montant_total_prevu = total_prevu
     budget.montant_total_realise = total_depenses
-    budget.ecart_total = total_depenses - total_depenses_prevues
-    if total_depenses_prevues > 0:
-        budget.taux_execution_budgetaire = (total_depenses / total_depenses_prevues) * Decimal("100")
+
+    # ecart_total: difference between realised and planned result (recettes - depenses)
+    recettes_realisees = Decimal(budget.total_recettes_realisees or 0)
+    depenses_realisees = Decimal(budget.total_depenses_realisees or 0)
+    solde_previsionnel = Decimal(recettes_prevues) - Decimal(depenses_prevues)
+    solde_realise = recettes_realisees - depenses_realisees
+    budget.ecart_total = solde_realise - solde_previsionnel
+    if depenses_prevues > 0:
+        budget.taux_execution_budgetaire = (total_depenses / depenses_prevues) * Decimal("100")
     else:
         budget.taux_execution_budgetaire = Decimal("0")
 
@@ -170,10 +188,22 @@ def _recalculate_after_change(db: Session, budget_id: int, ligne_ids: set[int | 
 def create_mouvement(db: Session, mouvement_in: MouvementFinancierCreate, current_user: User):
     _require_comptable(current_user)
     data = schema_to_dict(mouvement_in, exclude_unset=False)
+    # validate mode_paiement if provided
+    allowed_modes = {"Cash", "Mobile Money", "Banque"}
+    if data.get("mode_paiement") is not None and data["mode_paiement"] not in allowed_modes:
+        raise ValueError(f"mode_paiement invalide. Valeurs autorisees: {', '.join(allowed_modes)}")
     _validate_project_budget(db, data["projet_id"], data["budget_id"])
-    _validate_ligne_for_sortie(db, data["type_mouvement"], data["budget_id"], data.get("ligne_budgetaire_id"))
-    if data["type_mouvement"] == "entree":
-        data["ligne_budgetaire_id"] = None
+    # require and validate ligne_budgetaire for both entrees and sorties
+    _validate_ligne_for_mouvement(db, data["type_mouvement"], data["budget_id"], data.get("ligne_budgetaire_id"))
+
+    # generate reference_paiement if not provided
+    if not data.get("reference_paiement"):
+        while True:
+            candidate = f"PAY-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{random.randint(1000,9999)}"
+            exists = db.query(MouvementFinancier).filter(MouvementFinancier.reference_paiement == candidate).first()
+            if exists is None:
+                data["reference_paiement"] = candidate
+                break
 
     mouvement = MouvementFinancier(**data, comptable_id=current_user.id)
     db.add(mouvement)
@@ -206,9 +236,7 @@ def update_mouvement(db: Session, mouvement_id: int, mouvement_in: MouvementFina
 
     data = schema_to_dict(mouvement_in)
     ligne_id = data.get("ligne_budgetaire_id", mouvement.ligne_budgetaire_id)
-    _validate_ligne_for_sortie(db, mouvement.type_mouvement, mouvement.budget_id, ligne_id)
-    if mouvement.type_mouvement == "entree":
-        data["ligne_budgetaire_id"] = None
+    _validate_ligne_for_mouvement(db, mouvement.type_mouvement, mouvement.budget_id, ligne_id)
 
     update_model(mouvement, MouvementFinancierUpdate(**data))
     db.commit()
@@ -267,6 +295,7 @@ def _build_execution_payload(db: Session, budget: Budget):
     return {
         "projet_id": budget.projet_id,
         "budget_id": budget.id,
+        "devise": budget.devise or "FC",
         "statut_budget": budget.statut,
         "budget_previsionnel": Decimal(budget.montant_total_prevu or 0),
         "total_prevu": Decimal(budget.montant_total_prevu or 0),
@@ -306,6 +335,7 @@ def get_execution_budgetaire_projet(db: Session, projet_id: int):
         return {
             "projet_id": projet.id,
             "budget_id": None,
+            "devise": "FC",
             "statut_budget": None,
             "budget_previsionnel": Decimal("0"),
             "total_prevu": Decimal("0"),

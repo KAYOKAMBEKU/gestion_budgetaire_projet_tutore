@@ -8,8 +8,10 @@ import { budgetService } from "../../../services/budgetService";
 import { ligneBudgetaireService } from "../../../services/ligneBudgetaireService";
 import { projetService } from "../../../services/projetService";
 import { validationBudgetService } from "../../../services/validationBudgetService";
+import { formatDateRange } from "../../../utils/formatDate";
 import { ManagerSidebar } from "../components/ManagerSidebar";
 import { budgetStatusLabels, budgetStatusTones, getBudgetWarnings, sumByType } from "../utils/budgetAnalysis";
+import { getBudgetCurrency } from "../utils/budgetCurrency";
 import { formatAmount } from "../utils/formatAmount";
 
 function AccessMessage({ title, message }: { title: string; message: string }) {
@@ -147,6 +149,8 @@ export function ManagerBudgetDetailPage({
   if (currentUser?.departement_id && budget.departement_id !== currentUser.departement_id) {
     return <AccessMessage message="Ce budget n'appartient pas a votre departement." title="Acces refuse" />;
   }
+  const currency = getBudgetCurrency(budget);
+  const depenseExecutionRate = depensesPrevues > 0 ? (Number(budget.total_depenses_realisees ?? budget.montant_total_realise ?? 0) / depensesPrevues) * 100 : 0;
 
   return (
     <main className="min-h-screen bg-[#F4F7FA] lg:flex">
@@ -185,16 +189,16 @@ export function ManagerBudgetDetailPage({
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Periode du projet</p>
-              <p className="mt-2 font-semibold text-[#1F2937]">{project?.date_debut_prevue ?? budget.projet?.date_debut_prevue ?? "-"} au {project?.date_fin_prevue ?? budget.projet?.date_fin_prevue ?? "-"}</p>
+              <p className="mt-2 font-semibold text-[#1F2937]">{formatDateRange(project?.date_debut_prevue ?? budget.projet?.date_debut_prevue, project?.date_fin_prevue ?? budget.projet?.date_fin_prevue)}</p>
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Periode du budget</p>
-              <p className="mt-2 font-semibold text-[#1F2937]">{project?.date_debut_prevue ?? budget.projet?.date_debut_prevue ?? "-"} au {project?.date_fin_prevue ?? budget.projet?.date_fin_prevue ?? "-"}</p>
+              <p className="mt-2 font-semibold text-[#1F2937]">{formatDateRange(project?.date_debut_prevue ?? budget.projet?.date_debut_prevue, project?.date_fin_prevue ?? budget.projet?.date_fin_prevue)}</p>
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Exercice budgetaire</p>
               <p className="mt-2 font-semibold text-[#1F2937]">{budget.exercice?.libelle ?? budget.exercice_id}</p>
-              <p className="text-xs text-[#6B7280]">{budget.exercice?.date_debut} au {budget.exercice?.date_fin}</p>
+              <p className="text-xs text-[#6B7280]">{formatDateRange(budget.exercice?.date_debut, budget.exercice?.date_fin)}</p>
             </div>
           </section>
 
@@ -204,18 +208,24 @@ export function ManagerBudgetDetailPage({
             </section>
           ) : null}
 
+          {depenseExecutionRate >= 90 ? (
+            <section className={`rounded-lg border px-4 py-3 text-left text-sm font-semibold ${depenseExecutionRate >= 100 ? "border-[#FCA5A5] bg-[#FEE2E2] text-[#B91C1C]" : "border-[#FDE68A] bg-[#FEF3C7] text-[#92400E]"}`}>
+              Grand risque de depassement: {depenseExecutionRate.toFixed(2)}% des depenses prevues sont deja executees.
+            </section>
+          ) : null}
+
           <section className="grid gap-3 rounded-lg bg-white p-6 text-left shadow-sm ring-1 ring-[#E5E7EB] sm:grid-cols-2 xl:grid-cols-4">
             <div className="rounded-lg bg-[#FEE2E2] p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-[#DC2626]">Depenses prevues</p>
-              <p className="mt-2 text-lg font-bold text-[#B91C1C]">{formatAmount(depensesPrevues)}</p>
+              <p className="mt-2 text-lg font-bold text-[#B91C1C]">{formatAmount(depensesPrevues, currency)}</p>
             </div>
             <div className="rounded-lg bg-[#DCFCE7] p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-[#15803D]">Recettes prevues</p>
-              <p className="mt-2 text-lg font-bold text-[#15803D]">{formatAmount(recettesPrevues)}</p>
+              <p className="mt-2 text-lg font-bold text-[#15803D]">{formatAmount(recettesPrevues, currency)}</p>
             </div>
             <div className="rounded-lg bg-[#DBEAFE] p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-[#2563EB]">Solde previsionnel</p>
-              <p className="mt-2 text-lg font-bold text-[#1D4ED8]">{formatAmount(recettesPrevues - depensesPrevues)}</p>
+              <p className="mt-2 text-lg font-bold text-[#1D4ED8]">{formatAmount(recettesPrevues - depensesPrevues, currency)}</p>
             </div>
             <div className="rounded-lg bg-[#F9FAFB] p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Lignes</p>
@@ -227,11 +237,11 @@ export function ManagerBudgetDetailPage({
             <section className="grid gap-3 rounded-lg bg-white p-6 text-left shadow-sm ring-1 ring-[#E5E7EB] sm:grid-cols-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Recettes realisees</p>
-                <p className="mt-2 text-lg font-bold text-[#1F2937]">{formatAmount(budget.total_recettes_realisees ?? 0)}</p>
+                <p className="mt-2 text-lg font-bold text-[#1F2937]">{formatAmount(budget.total_recettes_realisees ?? 0, currency)}</p>
               </div>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Depenses realisees</p>
-                <p className="mt-2 text-lg font-bold text-[#1F2937]">{formatAmount(budget.total_depenses_realisees ?? 0)}</p>
+                <p className="mt-2 text-lg font-bold text-[#1F2937]">{formatAmount(budget.total_depenses_realisees ?? 0, currency)}</p>
               </div>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Taux execution</p>
@@ -262,8 +272,8 @@ export function ManagerBudgetDetailPage({
                       </td>
                       <td className="px-4 py-3 capitalize text-[#6B7280]">{ligne.type_ligne}</td>
                       <td className="px-4 py-3 text-[#6B7280]">{ligne.categorie?.nom ?? ligne.categorie_id}</td>
-                      <td className="px-4 py-3 font-semibold text-[#1F2937]">{formatAmount(ligne.montant_prevu)}</td>
-                      <td className="px-4 py-3 text-[#6B7280]">{formatAmount(ligne.montant_realise ?? 0)}</td>
+                      <td className="px-4 py-3 font-semibold text-[#1F2937]">{formatAmount(ligne.montant_prevu, currency)}</td>
+                      <td className="px-4 py-3 text-[#6B7280]">{formatAmount(ligne.montant_realise ?? 0, currency)}</td>
                     </tr>
                   ))}
                 </tbody>

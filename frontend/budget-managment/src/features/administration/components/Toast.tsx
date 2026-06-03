@@ -1,9 +1,22 @@
+import { useEffect } from "react";
 import { clearToast } from "../../../store/slices/uiSlice";
 import { useAppDispatch, useAppSelector } from "../../../store";
 
 export function Toast() {
   const dispatch = useAppDispatch();
   const { toastMessage, toastType } = useAppSelector((state) => state.ui);
+
+  useEffect(() => {
+    if (!toastMessage) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      dispatch(clearToast());
+    }, 5000);
+
+    return () => window.clearTimeout(timeout);
+  }, [dispatch, toastMessage]);
 
   if (!toastMessage) {
     return null;

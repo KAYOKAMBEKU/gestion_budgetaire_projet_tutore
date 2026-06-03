@@ -4,11 +4,13 @@ import { getApiErrorMessage } from "../../../../api/client";
 import { apiClient } from "../../../../api/client";
 import { budgetAnalyticsService } from "../../../../services/budgetAnalyticsService";
 import { ligneBudgetaireService } from "../../../../services/ligneBudgetaireService";
+import { formatDate } from "../../../../utils/formatDate";
+import { currencies, emptyCurrencyTotals, getBudgetCurrency, getBudgetRiskAlerts, type CurrencyTotals } from "../../../manager/utils/budgetCurrency";
 import { formatAmount } from "../../../manager/utils/formatAmount";
 import { InlineError, LoadingState } from "../SectionHeader";
 
 type ReportOutputType = "general" | "execution" | "ecarts" | "departements";
-type ChartRow = { label: string; value: number; valueType?: "amount" | "percent" | "count" };
+type ChartRow = { label: string; value: number; valueType?: "amount" | "percent" | "count"; currency?: CurrencyTotals["currency"] };
 
 const sidebarBlue = "#0F3D5E";
 
@@ -40,7 +42,7 @@ function formatChartValue(row: ChartRow) {
   if (row.valueType === "count") {
     return String(row.value);
   }
-  return formatAmount(row.value);
+  return formatAmount(row.value, row.currency);
 }
 
 function getChartWidth(value: number, maxValue: number) {
@@ -71,13 +73,10 @@ export function BudgetReportsSection() {
   const rows = useMemo(() => reportQuery.data ?? [], [reportQuery.data]);
   const filteredRows = rows;
 
-  const totalRecettesPrevues = filteredRows.reduce((sum, row) => sum + row.lignes.filter((ligne) => ligne.type_ligne === "recette").reduce((lineSum, ligne) => lineSum + Number(ligne.montant_prevu ?? 0), 0), 0);
-  const totalDepensesPrevues = filteredRows.reduce((sum, row) => sum + row.lignes.filter((ligne) => ligne.type_ligne === "depense").reduce((lineSum, ligne) => lineSum + Number(ligne.montant_prevu ?? 0), 0), 0);
-  const totalRecettesRealisees = filteredRows.reduce((sum, row) => sum + Number(row.execution?.total_recettes_realisees ?? row.budget.total_recettes_realisees ?? 0), 0);
-  const totalDepensesRealisees = filteredRows.reduce((sum, row) => sum + Number(row.execution?.total_depenses_realisees ?? row.budget.total_depenses_realisees ?? row.budget.montant_total_realise ?? 0), 0);
   const reportRows = useMemo(
     () =>
-      filteredRows.map(({ budget, execution }) => {
+      filteredRows.map(({ budget, execution, lignes }) => {
+        const currency = getBudgetCurrency(budget);
         const prevu = Number(budget.montant_total_prevu ?? 0);
         const realise = Number(execution?.montant_realise_total ?? budget.montant_total_realise ?? 0);
         const ecart = realise - prevu;
@@ -85,6 +84,7 @@ export function BudgetReportsSection() {
         const interpretation = Math.abs(ecart) < 1 ? "Conforme" : ecart > 0 ? "Defavorable" : "Favorable";
         return {
           budget,
+          currency,
           departement: budget.projet?.departement?.nom ?? `Departement ${budget.departement_id}`,
           ecart,
           exercice: budget.exercice?.libelle ?? `Exercice ${budget.exercice_id}`,
@@ -93,8 +93,8 @@ export function BudgetReportsSection() {
           realise,
           taux,
           prevu,
-          recettesPrevues: budget.montant_total_prevu ? filteredRows.find((row) => row.budget.id === budget.id)?.lignes.filter((ligne) => ligne.type_ligne === "recette").reduce((sum, ligne) => sum + Number(ligne.montant_prevu ?? 0), 0) ?? 0 : 0,
-          depensesPrevues: filteredRows.find((row) => row.budget.id === budget.id)?.lignes.filter((ligne) => ligne.type_ligne === "depense").reduce((sum, ligne) => sum + Number(ligne.montant_prevu ?? 0), 0) ?? 0,
+          recettesPrevues: lignes.filter((ligne) => ligne.type_ligne === "recette").reduce((sum, ligne) => sum + Number(ligne.montant_prevu ?? 0), 0),
+          depensesPrevues: lignes.filter((ligne) => ligne.type_ligne === "depense").reduce((sum, ligne) => sum + Number(ligne.montant_prevu ?? 0), 0),
           recettesRealisees: Number(execution?.total_recettes_realisees ?? budget.total_recettes_realisees ?? 0),
           depensesRealisees: Number(execution?.total_depenses_realisees ?? budget.total_depenses_realisees ?? budget.montant_total_realise ?? 0),
         };
@@ -102,33 +102,53 @@ export function BudgetReportsSection() {
     [filteredRows],
   );
   const departementRows = useMemo(() => {
-    const grouped = new Map<string, { budgets: number; departement: string; ecart: number; prevu: number; realise: number }>();
+    const grouped = new Map<string, { budgets: number; currency: CurrencyTotals["currency"]; departement: string; ecart: number; prevu: number; realise: number }>();
     for (const row of reportRows) {
-      const current = grouped.get(row.departement) ?? { budgets: 0, departement: row.departement, ecart: 0, prevu: 0, realise: 0 };
+      const key = `${row.departement}-${row.currency}`;
+      const current = grouped.get(key) ?? { budgets: 0, currency: row.currency, departement: row.departement, ecart: 0, prevu: 0, realise: 0 };
       current.budgets += 1;
       current.prevu += row.prevu;
       current.realise += row.realise;
       current.ecart += row.ecart;
-      grouped.set(row.departement, current);
+      grouped.set(key, current);
     }
     return Array.from(grouped.values()).map((row) => ({ ...row, taux: row.prevu > 0 ? (row.realise / row.prevu) * 100 : 0 }));
   }, [reportRows]);
-  const totalPrevisionnel = reportRows.reduce((sum, row) => sum + row.prevu, 0);
-  const totalRealise = reportRows.reduce((sum, row) => sum + row.realise, 0);
-  const tauxGlobal = totalPrevisionnel > 0 ? (totalRealise / totalPrevisionnel) * 100 : 0;
-  const amountChartRows: ChartRow[] = [
-    { label: "Total previsionnel", value: totalPrevisionnel },
-    { label: "Total realise", value: totalRealise },
-    { label: "Recettes prevues", value: totalRecettesPrevues },
-    { label: "Recettes realisees", value: totalRecettesRealisees },
-    { label: "Depenses prevues", value: totalDepensesPrevues },
-    { label: "Depenses realisees", value: totalDepensesRealisees },
-  ];
-  const varianceChartRows: ChartRow[] = [
-    { label: "Ecart recettes", value: totalRecettesRealisees - totalRecettesPrevues },
-    { label: "Ecart depenses", value: totalDepensesRealisees - totalDepensesPrevues },
-    { label: "Ecart resultat", value: (totalRecettesRealisees - totalDepensesRealisees) - (totalRecettesPrevues - totalDepensesPrevues) },
-  ];
+  const totalsByCurrency = useMemo(() => currencies.map((currency) => {
+    const total = emptyCurrencyTotals(currency);
+    for (const row of reportRows) {
+      if (row.currency !== currency) {
+        continue;
+      }
+      total.count += 1;
+      total.prevu += row.prevu;
+      total.realise += row.realise;
+      total.recettesPrevues += row.recettesPrevues;
+      total.recettesRealisees += row.recettesRealisees;
+      total.depensesPrevues += row.depensesPrevues;
+      total.depensesRealisees += row.depensesRealisees;
+    }
+    return total;
+  }), [reportRows]);
+  const riskAlerts = getBudgetRiskAlerts(reportRows.map((row) => row.budget));
+  const amountChartRows: ChartRow[] = totalsByCurrency.flatMap((total) => [
+    { label: `Total previsionnel ${total.currency}`, value: total.prevu, currency: total.currency },
+    { label: `Total realise ${total.currency}`, value: total.realise, currency: total.currency },
+    { label: `Recettes prevues ${total.currency}`, value: total.recettesPrevues, currency: total.currency },
+    { label: `Recettes realisees ${total.currency}`, value: total.recettesRealisees, currency: total.currency },
+    { label: `Depenses prevues ${total.currency}`, value: total.depensesPrevues, currency: total.currency },
+    { label: `Depenses realisees ${total.currency}`, value: total.depensesRealisees, currency: total.currency },
+  ]);
+  const varianceChartRows: ChartRow[] = totalsByCurrency.flatMap((total) => [
+    { label: `Ecart recettes ${total.currency}`, value: total.recettesRealisees - total.recettesPrevues, currency: total.currency },
+    { label: `Ecart depenses ${total.currency}`, value: total.depensesRealisees - total.depensesPrevues, currency: total.currency },
+    { label: `Ecart resultat ${total.currency}`, value: (total.recettesRealisees - total.depensesRealisees) - (total.recettesPrevues - total.depensesPrevues), currency: total.currency },
+  ]);
+  const tauxRows: ChartRow[] = totalsByCurrency.map((total) => ({
+    label: `Taux execution ${total.currency}`,
+    value: total.prevu > 0 ? (total.realise / total.prevu) * 100 : 0,
+    valueType: "percent",
+  }));
   const chartSections = (() => {
     if (outputType === "execution") {
       return [
@@ -136,16 +156,18 @@ export function BudgetReportsSection() {
           title: "Execution budgetaire",
           subtitle: "Montants realises",
           rows: [
-            { label: "Total realise", value: totalRealise },
-            { label: "Recettes realisees", value: totalRecettesRealisees },
-            { label: "Depenses realisees", value: totalDepensesRealisees },
-            { label: "Taux execution global", value: tauxGlobal, valueType: "percent" },
+            ...totalsByCurrency.flatMap((total) => [
+              { label: `Total realise ${total.currency}`, value: total.realise, currency: total.currency },
+              { label: `Recettes realisees ${total.currency}`, value: total.recettesRealisees, currency: total.currency },
+              { label: `Depenses realisees ${total.currency}`, value: total.depensesRealisees, currency: total.currency },
+            ]),
+            ...tauxRows,
           ] satisfies ChartRow[],
         },
         {
           title: "Taux par projet",
           subtitle: "Progression d'execution",
-          rows: reportRows.map((row) => ({ label: row.projet, value: row.taux, valueType: "percent" as const })),
+          rows: reportRows.map((row) => ({ label: `${row.projet} (${row.currency})`, value: row.taux, valueType: "percent" as const })),
         },
       ];
     }
@@ -160,7 +182,7 @@ export function BudgetReportsSection() {
         {
           title: "Ecarts par projet",
           subtitle: "Realise moins previsionnel",
-          rows: reportRows.map((row) => ({ label: row.projet, value: row.ecart })),
+          rows: reportRows.map((row) => ({ label: `${row.projet} (${row.currency})`, value: row.ecart, currency: row.currency })),
         },
       ];
     }
@@ -170,12 +192,12 @@ export function BudgetReportsSection() {
         {
           title: "Realisation par departement",
           subtitle: "Total realise",
-          rows: departementRows.map((row) => ({ label: row.departement, value: row.realise })),
+          rows: departementRows.map((row) => ({ label: `${row.departement} (${row.currency})`, value: row.realise, currency: row.currency })),
         },
         {
           title: "Taux par departement",
           subtitle: "Execution budgetaire",
-          rows: departementRows.map((row) => ({ label: row.departement, value: row.taux, valueType: "percent" as const })),
+          rows: departementRows.map((row) => ({ label: `${row.departement} (${row.currency})`, value: row.taux, valueType: "percent" as const })),
         },
       ];
     }
@@ -189,7 +211,7 @@ export function BudgetReportsSection() {
       {
         title: "Ecarts et execution",
         subtitle: "Synthese des variations",
-        rows: [...varianceChartRows, { label: "Taux execution global", value: tauxGlobal, valueType: "percent" as const }],
+        rows: [...varianceChartRows, ...tauxRows],
       },
     ];
   })();
@@ -272,6 +294,18 @@ export function BudgetReportsSection() {
         </div>
       </div>
       <div className="print-area grid gap-5">
+      {riskAlerts.length > 0 ? (
+        <div className="rounded-lg border border-[#FDE68A] bg-[#FEF3C7] p-4 text-left">
+          <p className="text-sm font-bold text-[#92400E]">Alertes de grand risque de depassement</p>
+          <div className="mt-3 grid gap-2">
+            {riskAlerts.slice(0, 5).map((alert) => (
+              <p className="text-sm font-semibold text-[#92400E]" key={alert.budgetId}>
+                {alert.label}: {alert.taux.toFixed(2)}% execute, {formatAmount(alert.realise, alert.currency)} sur {formatAmount(alert.prevu, alert.currency)}
+              </p>
+            ))}
+          </div>
+        </div>
+      ) : null}
       <div className="rounded-lg bg-white/30 p-4">
         <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Etat selectionne</p>
         <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
@@ -279,7 +313,7 @@ export function BudgetReportsSection() {
             <h3 className="text-xl font-bold text-[#1F2937]">{reportOutputLabels[outputType]}</h3>
             <p className="mt-1 text-sm text-[#6B7280]">{filteredRows.length} budget(s) inclus dans cet etat.</p>
           </div>
-          <p className="text-sm font-semibold text-[#6B7280]">Genere le {new Date().toLocaleDateString("fr-FR")}</p>
+          <p className="text-sm font-semibold text-[#6B7280]">Genere le {formatDate(new Date())}</p>
         </div>
       </div>
       <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
@@ -322,6 +356,7 @@ export function BudgetReportsSection() {
             {outputType === "departements" ? (
               <tr>
                 <th className="border border-[#0F3D5E] px-4 py-3 font-semibold text-white">Departement</th>
+                <th className="border border-[#0F3D5E] px-4 py-3 font-semibold text-white">Devise</th>
                 <th className="border border-[#0F3D5E] px-4 py-3 font-semibold text-white">Budgets</th>
                 <th className="border border-[#0F3D5E] px-4 py-3 font-semibold text-white">Total previsionnel</th>
                 <th className="border border-[#0F3D5E] px-4 py-3 font-semibold text-white">Total realise</th>
@@ -332,6 +367,7 @@ export function BudgetReportsSection() {
               <tr>
                 <th className="border border-[#0F3D5E] px-4 py-3 font-semibold text-white">Projet</th>
                 <th className="border border-[#0F3D5E] px-4 py-3 font-semibold text-white">Departement</th>
+                <th className="border border-[#0F3D5E] px-4 py-3 font-semibold text-white">Devise</th>
                 <th className="border border-[#0F3D5E] px-4 py-3 font-semibold text-white">Exercice</th>
                 <th className="border border-[#0F3D5E] px-4 py-3 font-semibold text-white">Statut</th>
                 <th className="border border-[#0F3D5E] px-4 py-3 font-semibold text-white">Budget previsionnel</th>
@@ -347,32 +383,34 @@ export function BudgetReportsSection() {
           <tbody>
             {outputType === "departements" ? (
               departementRows.length === 0 ? (
-                <tr><td className="border border-[#0F3D5E] px-4 py-8 text-center text-[#6B7280]" colSpan={6}>Aucun budget pour ces filtres.</td></tr>
+                <tr><td className="border border-[#0F3D5E] px-4 py-8 text-center text-[#6B7280]" colSpan={7}>Aucun budget pour ces filtres.</td></tr>
               ) : departementRows.map((row) => (
-                <tr key={row.departement}>
+                <tr key={`${row.departement}-${row.currency}`}>
                   <td className="border border-[#0F3D5E] px-4 py-3 font-semibold text-[#1F2937]">{row.departement}</td>
+                  <td className="border border-[#0F3D5E] px-4 py-3 font-semibold text-[#1F2937]">{row.currency}</td>
                   <td className="border border-[#0F3D5E] px-4 py-3">{row.budgets}</td>
-                  <td className="border border-[#0F3D5E] px-4 py-3">{formatAmount(row.prevu)}</td>
-                  <td className="border border-[#0F3D5E] px-4 py-3 font-semibold text-[#1F2937]">{formatAmount(row.realise)}</td>
-                  <td className="border border-[#0F3D5E] px-4 py-3">{formatAmount(row.ecart)}</td>
+                  <td className="border border-[#0F3D5E] px-4 py-3">{formatAmount(row.prevu, row.currency)}</td>
+                  <td className="border border-[#0F3D5E] px-4 py-3 font-semibold text-[#1F2937]">{formatAmount(row.realise, row.currency)}</td>
+                  <td className="border border-[#0F3D5E] px-4 py-3">{formatAmount(row.ecart, row.currency)}</td>
                   <td className="border border-[#0F3D5E] px-4 py-3">{row.taux.toFixed(2)}%</td>
                 </tr>
               ))
             ) : reportRows.length === 0 ? (
-              <tr><td className="border border-[#0F3D5E] px-4 py-8 text-center text-[#6B7280]" colSpan={outputType === "general" ? 9 : 10}>Aucun budget pour ces filtres.</td></tr>
+              <tr><td className="border border-[#0F3D5E] px-4 py-8 text-center text-[#6B7280]" colSpan={outputType === "general" ? 10 : 11}>Aucun budget pour ces filtres.</td></tr>
             ) : reportRows.map((row) => (
               <tr key={row.budget.id}>
                 <td className="border border-[#0F3D5E] px-4 py-3 font-semibold text-[#1F2937]">{row.projet}</td>
                 <td className="border border-[#0F3D5E] px-4 py-3 text-[#6B7280]">{row.departement}</td>
+                <td className="border border-[#0F3D5E] px-4 py-3 font-semibold text-[#1F2937]">{row.currency}</td>
                 <td className="border border-[#0F3D5E] px-4 py-3 text-[#6B7280]">{row.exercice}</td>
                 <td className="border border-[#0F3D5E] px-4 py-3 text-[#6B7280]">{row.budget.statut}</td>
-                <td className="border border-[#0F3D5E] px-4 py-3">{formatAmount(row.prevu)}</td>
-                <td className="border border-[#0F3D5E] px-4 py-3 font-semibold text-[#1F2937]">{formatAmount(row.realise)}</td>
-                <td className="border border-[#0F3D5E] px-4 py-3">{formatAmount(row.ecart)}</td>
+                <td className="border border-[#0F3D5E] px-4 py-3">{formatAmount(row.prevu, row.currency)}</td>
+                <td className="border border-[#0F3D5E] px-4 py-3 font-semibold text-[#1F2937]">{formatAmount(row.realise, row.currency)}</td>
+                <td className="border border-[#0F3D5E] px-4 py-3">{formatAmount(row.ecart, row.currency)}</td>
                 <td className="border border-[#0F3D5E] px-4 py-3">{row.taux.toFixed(2)}%</td>
                 <td className="border border-[#0F3D5E] px-4 py-3 font-semibold text-[#374151]">{row.interpretation}</td>
-                {outputType === "execution" ? <td className="border border-[#0F3D5E] px-4 py-3">{formatAmount(row.recettesRealisees)} / {formatAmount(row.depensesRealisees)}</td> : null}
-                {outputType === "ecarts" ? <td className="border border-[#0F3D5E] px-4 py-3">Recettes: {formatAmount(row.recettesRealisees - row.recettesPrevues)} / Depenses: {formatAmount(row.depensesRealisees - row.depensesPrevues)}</td> : null}
+                {outputType === "execution" ? <td className="border border-[#0F3D5E] px-4 py-3">{formatAmount(row.recettesRealisees, row.currency)} / {formatAmount(row.depensesRealisees, row.currency)}</td> : null}
+                {outputType === "ecarts" ? <td className="border border-[#0F3D5E] px-4 py-3">Recettes: {formatAmount(row.recettesRealisees - row.recettesPrevues, row.currency)} / Depenses: {formatAmount(row.depensesRealisees - row.depensesPrevues, row.currency)}</td> : null}
               </tr>
             ))}
           </tbody>
