@@ -149,7 +149,11 @@ export function ComptableBudgetDetailPage() {
       description: descriptionParts.join("\n") || undefined,
       montant: Number(form.montant),
       date_mouvement: form.date_mouvement,
-      mode_paiement: (form.mode_paiement || undefined) as "Cash" | "Mobile Money" | "Banque" | undefined,
+      mode_paiement: (form.mode_paiement || undefined) as
+        | "Cash"
+        | "Mobile Money"
+        | "Banque"
+        | undefined,
       // reference_paiement is generated server-side; do not send from client
       piece_justificative: form.piece_justificative || undefined,
     };
