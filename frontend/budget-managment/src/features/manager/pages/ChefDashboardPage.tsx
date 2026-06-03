@@ -3,9 +3,10 @@ import { Link } from "react-router-dom";
 import { getApiErrorMessage } from "../../../api/client";
 import { useAuth } from "../../../context/AuthContext";
 import { budgetService } from "../../../services/budgetService";
-import { formatAmount } from "../utils/formatAmount";
 import { ManagerSidebar } from "../components/ManagerSidebar";
 import { useChefProjects } from "../hooks/useManagerProjects";
+import { formatCurrencyTotals, getBudgetRiskAlerts, groupBudgetTotalsByCurrency } from "../utils/budgetCurrency";
+import { formatAmount } from "../utils/formatAmount";
 
 function AccessMessage({ title, message }: { title: string; message: string }) {
   return (
@@ -42,8 +43,8 @@ export function ChefDashboardPage() {
 
   const projects = projectsQuery.data ?? [];
   const budgets = budgetsQuery.data ?? [];
-  const totalPrevisionnel = budgets.reduce((sum, budget) => sum + Number(budget.montant_total_prevu ?? 0), 0);
-  const totalRealise = budgets.reduce((sum, budget) => sum + Number(budget.montant_total_realise ?? 0), 0);
+  const totalsByCurrency = groupBudgetTotalsByCurrency(budgets);
+  const riskAlerts = getBudgetRiskAlerts(budgets);
   const countByStatus = (statuses: string[]) => budgets.filter((budget) => statuses.includes(budget.statut)).length;
 
   const stats = [
@@ -80,16 +81,30 @@ export function ChefDashboardPage() {
           <section className="card grid gap-4 md:grid-cols-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Budget previsionnel total</p>
-              <p className="mt-2 text-xl font-bold text-[#1F2937]">{formatAmount(totalPrevisionnel)}</p>
+              <p className="mt-2 text-xl font-bold text-[#1F2937]">{formatCurrencyTotals(totalsByCurrency, (total) => total.prevu)}</p>
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Budget realise</p>
-              <p className="mt-2 text-xl font-bold text-[#2563EB]">{formatAmount(totalRealise)}</p>
+              <p className="mt-2 text-xl font-bold text-[#2563EB]">{formatCurrencyTotals(totalsByCurrency, (total) => total.realise)}</p>
               <p className="mt-1 text-xs text-[#6B7280]">Lecture seule, calcule depuis les mouvements comptables.</p>
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Ecart global</p>
-              <p className="mt-2 text-xl font-bold text-[#1F2937]">{formatAmount(totalRealise - totalPrevisionnel)}</p>
+              <p className="mt-2 text-xl font-bold text-[#1F2937]">{formatCurrencyTotals(totalsByCurrency, (total) => total.realise - total.prevu)}</p>
+            </div>
+          </section>
+
+          <section className="rounded-lg border border-[#FDE68A] bg-white p-6 text-left shadow-sm">
+            <h2 className="text-lg font-bold text-[#1F2937]">Alertes de depassement</h2>
+            <div className="mt-4 grid gap-3">
+              {riskAlerts.length === 0 ? (
+                <p className="rounded-lg bg-[#DCFCE7] px-4 py-3 text-sm font-medium text-[#16A34A]">Aucun budget en grand risque de depassement.</p>
+              ) : riskAlerts.slice(0, 5).map((alert) => (
+                <div className={`rounded-lg border px-4 py-3 text-sm ${alert.level === "danger" ? "border-[#FCA5A5] bg-[#FEE2E2] text-[#B91C1C]" : "border-[#FDE68A] bg-[#FEF3C7] text-[#92400E]"}`} key={alert.budgetId}>
+                  <p className="font-bold">{alert.label}</p>
+                  <p className="mt-1 font-semibold">{alert.taux.toFixed(2)}% execute - {formatAmount(alert.realise, alert.currency)} sur {formatAmount(alert.prevu, alert.currency)}</p>
+                </div>
+              ))}
             </div>
           </section>
 

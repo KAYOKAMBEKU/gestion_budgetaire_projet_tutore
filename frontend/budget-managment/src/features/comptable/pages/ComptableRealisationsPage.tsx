@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { getApiErrorMessage } from "../../../api/client";
 import { useAuth } from "../../../context/AuthContext";
 import type { Budget } from "../../../types/budget";
+import { getBudgetCurrency, getExecutionCurrency } from "../../manager/utils/budgetCurrency";
 import { formatAmount } from "../../manager/utils/formatAmount";
 import { ComptableSidebar } from "../components/ComptableSidebar";
 import { useBudgetExecutionContext, useExecutableBudgets } from "../hooks/useComptableBudget";
@@ -33,6 +34,7 @@ export function ComptableRealisationsPage() {
   const budget = contextQuery.data?.budget ?? executableBudgets.find((item) => item.id === activeBudgetId);
   const execution = contextQuery.data?.execution;
   const lignes = execution?.lignes_budgetaires ?? [];
+  const currency = execution ? getExecutionCurrency(execution) : getBudgetCurrency(budget);
 
   if (authLoading) {
     return <main className="grid min-h-screen place-items-center bg-[#F4F7FA] text-sm font-semibold text-[#6B7280]">Verification de la session...</main>;
@@ -96,19 +98,19 @@ export function ComptableRealisationsPage() {
               <section className="grid gap-4 rounded-lg bg-white p-6 text-left shadow-sm ring-1 ring-[#E5E7EB] md:grid-cols-4">
                 <div className="rounded-lg bg-[#F9FAFB] p-4 ring-1 ring-[#E5E7EB]">
                   <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Recettes realisees</p>
-                  <p className="mt-2 text-lg font-bold text-[#1F2937]">{formatAmount(execution?.total_recettes_realisees ?? 0)}</p>
+                  <p className="mt-2 text-lg font-bold text-[#1F2937]">{formatAmount(execution?.total_recettes_realisees ?? 0, currency)}</p>
                 </div>
                 <div className="rounded-lg bg-[#F9FAFB] p-4 ring-1 ring-[#E5E7EB]">
                   <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Depenses realisees</p>
-                  <p className="mt-2 text-lg font-bold text-[#1F2937]">{formatAmount(execution?.total_depenses_realisees ?? 0)}</p>
+                  <p className="mt-2 text-lg font-bold text-[#1F2937]">{formatAmount(execution?.total_depenses_realisees ?? 0, currency)}</p>
                 </div>
                 <div className="rounded-lg bg-[#F9FAFB] p-4 ring-1 ring-[#E5E7EB]">
                   <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Budget realise</p>
-                  <p className="mt-2 text-lg font-bold text-[#1F2937]">{formatAmount(execution?.montant_realise_total ?? 0)}</p>
+                  <p className="mt-2 text-lg font-bold text-[#1F2937]">{formatAmount(execution?.montant_realise_total ?? 0, currency)}</p>
                 </div>
                 <div className="rounded-lg bg-[#F9FAFB] p-4 ring-1 ring-[#E5E7EB]">
                   <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Solde realise</p>
-                  <p className="mt-2 text-lg font-bold text-[#1F2937]">{formatAmount(execution?.solde_realise ?? 0)}</p>
+                  <p className="mt-2 text-lg font-bold text-[#1F2937]">{formatAmount(execution?.solde_realise ?? 0, currency)}</p>
                 </div>
               </section>
 
@@ -157,9 +159,9 @@ export function ComptableRealisationsPage() {
                           <tr key={ligne.ligne_budgetaire_id} className="border-b border-[#E5E7EB]">
                             <td className="px-4 py-3 font-semibold text-[#1F2937]">{ligne.libelle}</td>
                             <td className="px-4 py-3 capitalize text-[#6B7280]">{ligne.type_ligne}</td>
-                            <td className="px-4 py-3">{formatAmount(ligne.montant_prevu)}</td>
-                            <td className="px-4 py-3 font-semibold text-[#1F2937]">{formatAmount(ligne.montant_realise)}</td>
-                            <td className="px-4 py-3">{formatAmount(ligne.ecart_montant)}</td>
+                            <td className="px-4 py-3">{formatAmount(ligne.montant_prevu, currency)}</td>
+                            <td className="px-4 py-3 font-semibold text-[#1F2937]">{formatAmount(ligne.montant_realise, currency)}</td>
+                            <td className="px-4 py-3">{formatAmount(ligne.ecart_montant, currency)}</td>
                             <td className="px-4 py-3">{Number(ligne.ecart_pourcentage ?? 0).toFixed(2)}%</td>
                           </tr>
                         ))

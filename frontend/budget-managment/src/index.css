@@ -268,6 +268,17 @@ button:disabled {
   overflow-y: hidden;
 }
 
+:where(div, section):has(> table) {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+:where(div, section):has(> table) > table {
+  width: 100%;
+  min-width: max-content;
+}
+
 .overflow-hidden > .overflow-x-auto:has(> table) {
   border: 0;
   border-radius: 0;
@@ -284,6 +295,7 @@ button:disabled {
 }
 
 table {
+  width: 100%;
   border-collapse: separate;
   border-spacing: 0;
 }

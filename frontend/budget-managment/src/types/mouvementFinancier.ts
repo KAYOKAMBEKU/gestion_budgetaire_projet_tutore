@@ -14,7 +14,7 @@ export interface MouvementFinancier {
   description?: string | null;
   montant: number;
   date_mouvement: string;
-  mode_paiement?: string | null;
+  mode_paiement?: "Cash" | "Mobile Money" | "Banque" | null;
   reference_paiement?: string | null;
   piece_justificative?: string | null;
   comptable_id: number;
@@ -32,7 +32,7 @@ export interface MouvementFinancierCreate {
   description?: string;
   montant: number;
   date_mouvement: string;
-  mode_paiement?: string;
+  mode_paiement?: "Cash" | "Mobile Money" | "Banque";
   reference_paiement?: string;
   piece_justificative?: string;
 }
@@ -50,6 +50,7 @@ export interface LigneExecutionBudgetaire {
 export interface ExecutionBudgetaire {
   projet_id?: number | null;
   budget_id?: number | null;
+  devise?: "FC" | "USD";
   statut_budget?: string | null;
   budget_previsionnel: number;
   total_recettes_prevues: number;

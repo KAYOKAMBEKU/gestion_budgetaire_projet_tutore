@@ -6,6 +6,8 @@ import { Toast } from "../../administration/components/Toast";
 import { useBudgetsByProjects } from "../hooks/useManagerBudget";
 import { useChefProjects } from "../hooks/useManagerProjects";
 import type { BudgetStatus } from "../../../types/budget";
+import { getBudgetCurrency } from "../utils/budgetCurrency";
+import { formatAmount } from "../utils/formatAmount";
 
 const labels: Record<BudgetStatus, string> = {
   brouillon: "Brouillon",
@@ -89,6 +91,7 @@ export function ChefSubmissionsPage() {
                     <th className="px-4 py-3 font-semibold text-[#374151]">Reference</th>
                     <th className="px-4 py-3 font-semibold text-[#374151]">Budget</th>
                     <th className="px-4 py-3 font-semibold text-[#374151]">Projet</th>
+                    <th className="px-4 py-3 font-semibold text-[#374151]">Previsionnel</th>
                     <th className="px-4 py-3 font-semibold text-[#374151]">Statut</th>
                     <th className="px-4 py-3 font-semibold text-[#374151]">Action</th>
                   </tr>
@@ -96,11 +99,11 @@ export function ChefSubmissionsPage() {
                 <tbody>
                   {projectsQuery.isLoading || budgetsQuery.isLoading ? (
                     <tr>
-                      <td className="px-4 py-8 text-center text-[#6B7280]" colSpan={5}>Chargement...</td>
+                      <td className="px-4 py-8 text-center text-[#6B7280]" colSpan={6}>Chargement...</td>
                     </tr>
                   ) : (budgetsQuery.data ?? []).length === 0 ? (
                     <tr>
-                      <td className="px-4 py-8 text-center text-[#6B7280]" colSpan={5}>Aucune soumission budgetaire.</td>
+                      <td className="px-4 py-8 text-center text-[#6B7280]" colSpan={6}>Aucune soumission budgetaire.</td>
                     </tr>
                   ) : (
                     (budgetsQuery.data ?? []).map((budget) => (
@@ -108,6 +111,7 @@ export function ChefSubmissionsPage() {
                         <td className="px-4 py-3 font-semibold text-[#1F2937]">{budget.reference}</td>
                         <td className="px-4 py-3 text-[#374151]">{budget.libelle}</td>
                         <td className="px-4 py-3 text-[#374151]">{budget.projet_id ? projectTitles.get(budget.projet_id) ?? budget.projet_id : "-"}</td>
+                        <td className="px-4 py-3 font-semibold text-[#1F2937]">{formatAmount(budget.montant_total_prevu ?? 0, getBudgetCurrency(budget))}</td>
                         <td className="px-4 py-3">
                           <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${tones[budget.statut]}`}>{labels[budget.statut]}</span>
                         </td>

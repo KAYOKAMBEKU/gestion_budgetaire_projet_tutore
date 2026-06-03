@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { getApiErrorMessage } from "../../../api/client";
 import { useAuth } from "../../../context/AuthContext";
 import type { Budget } from "../../../types/budget";
+import { getBudgetCurrency, getExecutionCurrency } from "../../manager/utils/budgetCurrency";
 import { formatAmount } from "../../manager/utils/formatAmount";
 import { ComptableSidebar } from "../components/ComptableSidebar";
 import { useBudgetExecutionContext, useExecutableBudgets } from "../hooks/useComptableBudget";
@@ -51,6 +52,7 @@ export function ComptableAnalyseEcartsPage() {
   const resultatPrevisionnel = (execution?.total_recettes_prevues ?? 0) - (execution?.total_depenses_prevues ?? 0);
   const resultatRealise = (execution?.total_recettes_realisees ?? 0) - (execution?.total_depenses_realisees ?? 0);
   const ecartResultat = execution?.ecart_resultat ?? resultatRealise - resultatPrevisionnel;
+  const currency = execution ? getExecutionCurrency(execution) : getBudgetCurrency(budget);
 
   if (authLoading) {
     return <main className="grid min-h-screen place-items-center bg-[#F4F7FA] text-sm font-semibold text-[#6B7280]">Verification de la session...</main>;
@@ -114,17 +116,17 @@ export function ComptableAnalyseEcartsPage() {
               <section className="grid gap-4 rounded-lg bg-white p-6 text-left shadow-sm ring-1 ring-[#E5E7EB] lg:grid-cols-3">
                 <div className="rounded-lg bg-[#F9FAFB] p-4">
                   <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Ecart recettes</p>
-                  <p className={`mt-2 text-xl font-bold ${getEcartTone(execution?.ecart_recettes ?? 0)}`}>{formatAmount(execution?.ecart_recettes ?? 0)}</p>
+                  <p className={`mt-2 text-xl font-bold ${getEcartTone(execution?.ecart_recettes ?? 0)}`}>{formatAmount(execution?.ecart_recettes ?? 0, currency)}</p>
                   <p className="mt-1 text-xs text-[#6B7280]">Realise - prevu</p>
                 </div>
                 <div className="rounded-lg bg-[#F9FAFB] p-4">
                   <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Ecart depenses</p>
-                  <p className={`mt-2 text-xl font-bold ${getEcartTone(execution?.ecart_depenses ?? 0)}`}>{formatAmount(execution?.ecart_depenses ?? 0)}</p>
+                  <p className={`mt-2 text-xl font-bold ${getEcartTone(execution?.ecart_depenses ?? 0)}`}>{formatAmount(execution?.ecart_depenses ?? 0, currency)}</p>
                   <p className="mt-1 text-xs text-[#6B7280]">Depenses realisees - depenses prevues</p>
                 </div>
                 <div className="rounded-lg bg-[#F9FAFB] p-4">
                   <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Ecart resultat</p>
-                  <p className={`mt-2 text-xl font-bold ${getEcartTone(ecartResultat)}`}>{formatAmount(ecartResultat)}</p>
+                  <p className={`mt-2 text-xl font-bold ${getEcartTone(ecartResultat)}`}>{formatAmount(ecartResultat, currency)}</p>
                   <p className="mt-1 text-xs text-[#6B7280]">Resultat realise - resultat previsionnel</p>
                 </div>
               </section>
@@ -132,27 +134,27 @@ export function ComptableAnalyseEcartsPage() {
               <section className="grid gap-4 rounded-lg bg-white p-6 text-left shadow-sm ring-1 ring-[#E5E7EB] md:grid-cols-2 lg:grid-cols-4">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Recettes prevues</p>
-                  <p className="mt-1 font-bold text-[#1F2937]">{formatAmount(execution?.total_recettes_prevues ?? 0)}</p>
+                  <p className="mt-1 font-bold text-[#1F2937]">{formatAmount(execution?.total_recettes_prevues ?? 0, currency)}</p>
                 </div>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Recettes realisees</p>
-                  <p className="mt-1 font-bold text-[#1F2937]">{formatAmount(execution?.total_recettes_realisees ?? 0)}</p>
+                  <p className="mt-1 font-bold text-[#1F2937]">{formatAmount(execution?.total_recettes_realisees ?? 0, currency)}</p>
                 </div>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Depenses prevues</p>
-                  <p className="mt-1 font-bold text-[#1F2937]">{formatAmount(execution?.total_depenses_prevues ?? budget.montant_total_prevu ?? 0)}</p>
+                  <p className="mt-1 font-bold text-[#1F2937]">{formatAmount(execution?.total_depenses_prevues ?? budget.montant_total_prevu ?? 0, currency)}</p>
                 </div>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Depenses realisees</p>
-                  <p className="mt-1 font-bold text-[#1F2937]">{formatAmount(execution?.total_depenses_realisees ?? 0)}</p>
+                  <p className="mt-1 font-bold text-[#1F2937]">{formatAmount(execution?.total_depenses_realisees ?? 0, currency)}</p>
                 </div>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Solde previsionnel</p>
-                  <p className="mt-1 font-bold text-[#1F2937]">{formatAmount(execution?.solde_previsionnel ?? resultatPrevisionnel)}</p>
+                  <p className="mt-1 font-bold text-[#1F2937]">{formatAmount(execution?.solde_previsionnel ?? resultatPrevisionnel, currency)}</p>
                 </div>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Solde realise</p>
-                  <p className="mt-1 font-bold text-[#1F2937]">{formatAmount(execution?.solde_realise ?? resultatRealise)}</p>
+                  <p className="mt-1 font-bold text-[#1F2937]">{formatAmount(execution?.solde_realise ?? resultatRealise, currency)}</p>
                 </div>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Taux depenses</p>
@@ -204,9 +206,9 @@ export function ComptableAnalyseEcartsPage() {
                             <tr key={ligne.ligne_budgetaire_id} className="border-b border-[#E5E7EB]">
                               <td className="px-4 py-3 font-semibold text-[#1F2937]">{ligne.libelle}</td>
                               <td className="px-4 py-3 capitalize text-[#6B7280]">{ligne.type_ligne}</td>
-                              <td className="px-4 py-3">{formatAmount(ligne.montant_prevu)}</td>
-                              <td className="px-4 py-3 font-semibold text-[#1F2937]">{formatAmount(ligne.montant_realise)}</td>
-                              <td className={`px-4 py-3 font-semibold ${getEcartTone(ligne.ecart_montant)}`}>{formatAmount(ligne.ecart_montant)}</td>
+                              <td className="px-4 py-3">{formatAmount(ligne.montant_prevu, currency)}</td>
+                              <td className="px-4 py-3 font-semibold text-[#1F2937]">{formatAmount(ligne.montant_realise, currency)}</td>
+                              <td className={`px-4 py-3 font-semibold ${getEcartTone(ligne.ecart_montant)}`}>{formatAmount(ligne.ecart_montant, currency)}</td>
                               <td className="px-4 py-3">
                                 <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${getRateTone(rate)}`}>{rate.toFixed(2)}%</span>
                               </td>

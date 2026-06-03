@@ -4,6 +4,7 @@ import { budgetService } from "../../../services/budgetService";
 import { ligneBudgetaireService } from "../../../services/ligneBudgetaireService";
 import { ManagerSidebar } from "../components/ManagerSidebar";
 import { getBudgetWarnings } from "../utils/budgetAnalysis";
+import { formatCurrencyTotals, getBudgetRiskAlerts, groupBudgetTotalsByCurrency } from "../utils/budgetCurrency";
 import { formatAmount } from "../utils/formatAmount";
 
 function AccessMessage({ title, message }: { title: string; message: string }) {
@@ -46,7 +47,8 @@ export function ManagerDashboardPage() {
 
   const rows = dashboardQuery.data ?? [];
   const budgets = rows.map((row) => row.budget);
-  const totalPrevisionnel = budgets.reduce((sum, budget) => sum + Number(budget.montant_total_prevu ?? 0), 0);
+  const totalsByCurrency = groupBudgetTotalsByCurrency(budgets);
+  const riskAlerts = getBudgetRiskAlerts(budgets);
   const countByStatus = (statuses: string[]) => budgets.filter((budget) => statuses.includes(budget.statut)).length;
   const warnings = rows.flatMap((row) => getBudgetWarnings(row.budget, row.lignes).map((message) => ({ budget: row.budget, message }))).slice(0, 5);
 
@@ -82,7 +84,20 @@ export function ManagerDashboardPage() {
             </div>
             <div className="rounded-lg border border-[#0F3D5E] bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
               <p className="text-xs font-semibold uppercase tracking-wide text-[#0F3D5E]">Previsionnel departement</p>
-              <p className="mt-3 text-xl font-bold text-[#0F3D5E]">{formatAmount(totalPrevisionnel)}</p>
+              <p className="mt-3 text-xl font-bold text-[#0F3D5E]">{formatCurrencyTotals(totalsByCurrency, (total) => total.prevu)}</p>
+            </div>
+          </section>
+
+          <section className="rounded-lg bg-white p-6 text-left shadow-sm ring-1 ring-[#E5E7EB]">
+            <h2 className="text-lg font-bold text-[#1F2937]">Alertes de depassement</h2>
+            <div className="mt-4 grid gap-3">
+              {riskAlerts.length === 0 ? (
+                <p className="rounded-lg bg-[#DCFCE7] px-4 py-3 text-sm font-medium text-[#16A34A]">Aucun budget en grand risque de depassement.</p>
+              ) : riskAlerts.slice(0, 5).map((alert) => (
+                <div className={`rounded-lg border px-4 py-3 text-sm ${alert.level === "danger" ? "border-[#FCA5A5] bg-[#FEE2E2] text-[#B91C1C]" : "border-[#FDE68A] bg-[#FEF3C7] text-[#92400E]"}`} key={alert.budgetId}>
+                  <span className="font-semibold">{alert.label}</span> : {alert.taux.toFixed(2)}% execute, {formatAmount(alert.realise, alert.currency)} sur {formatAmount(alert.prevu, alert.currency)}
+                </div>
+              ))}
             </div>
           </section>
 

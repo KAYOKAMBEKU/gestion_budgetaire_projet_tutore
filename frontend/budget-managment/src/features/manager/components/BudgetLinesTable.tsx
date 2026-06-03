@@ -1,12 +1,14 @@
+import type { CurrencyCode } from "../../../context/CurrencyContext";
 import type { DraftBudgetLine } from "../../../types/ligneBudgetaire";
 import { formatAmount } from "../utils/formatAmount";
 
 interface BudgetLinesTableProps {
+  currency?: CurrencyCode;
   lines: DraftBudgetLine[];
   onRemove: (index: number) => void;
 }
 
-export function BudgetLinesTable({ lines, onRemove }: BudgetLinesTableProps) {
+export function BudgetLinesTable({ currency, lines, onRemove }: BudgetLinesTableProps) {
   return (
     <section className="rounded-lg border border-[#E5E7EB] bg-white p-5 text-left shadow-sm">
       <h2 className="text-lg font-bold text-[#1F2937]">Lignes budgetaires ajoutees</h2>
@@ -40,10 +42,10 @@ export function BudgetLinesTable({ lines, onRemove }: BudgetLinesTableProps) {
                     <td className="px-4 py-3 capitalize text-[#6B7280]">{line.type_ligne}</td>
                     <td className="px-4 py-3 text-[#6B7280]">{line.categorie_nom}</td>
                     <td className="px-4 py-3 text-xs text-[#6B7280]">
-                      <p>{line.quantite && line.cout_unitaire ? `${line.quantite} x ${formatAmount(line.cout_unitaire)}` : "-"}</p>
+                      <p>{line.quantite && line.cout_unitaire ? `${line.quantite} x ${formatAmount(line.cout_unitaire, currency)}` : "-"}</p>
                       <p>{line.periode || ""}</p>
                     </td>
-                    <td className="px-4 py-3 font-semibold text-[#1F2937]">{formatAmount(line.montant_prevu)}</td>
+                    <td className="px-4 py-3 font-semibold text-[#1F2937]">{formatAmount(line.montant_prevu, currency)}</td>
                     <td className="px-4 py-3 text-right">
                       <button className="text-sm font-semibold text-[#DC2626] hover:text-[#B91C1C]" onClick={() => onRemove(index)} type="button">
                         Supprimer

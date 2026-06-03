@@ -2,17 +2,21 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { getApiErrorMessage } from "../../../api/client";
+import { CurrencySelector } from "../../../components/ui/CurrencySelector";
 import { PopupModal } from "../../../components/ui/PopupModal";
 import { useAuth } from "../../../context/AuthContext";
+import { useCurrency } from "../../../context/CurrencyContext";
 import { budgetService } from "../../../services/budgetService";
 import { ligneBudgetaireService } from "../../../services/ligneBudgetaireService";
 import { projetService } from "../../../services/projetService";
 import type { Budget } from "../../../types/budget";
 import type { LigneBudgetaire } from "../../../types/ligneBudgetaire";
 import type { Projet } from "../../../types/projet";
+import { formatDate } from "../../../utils/formatDate";
 import { EditIcon, EyeIcon } from "../components/ActionIcon";
 import { ManagerSidebar } from "../components/ManagerSidebar";
 import { budgetStatusLabels, budgetStatusTones, sumByType } from "../utils/budgetAnalysis";
+import { getBudgetCurrency } from "../utils/budgetCurrency";
 import { formatAmount } from "../utils/formatAmount";
 
 interface BudgetRow {
@@ -53,6 +57,7 @@ function useDepartmentBudgetRows(departementId?: number) {
 }
 
 export function ManagerBudgetsPage({ analysisOnly = false }: { analysisOnly?: boolean }) {
+  useCurrency();
   const { authLoading, currentUser, isAuthenticated, isManager } = useAuth();
   const [selectedDetails, setSelectedDetails] = useState<BudgetRow | null>(null);
   const rowsQuery = useDepartmentBudgetRows(currentUser?.departement_id);
@@ -122,19 +127,20 @@ export function ManagerBudgetsPage({ analysisOnly = false }: { analysisOnly?: bo
                       rows.map(({ budget, lignes, project }: BudgetRow) => {
                         const recettes = sumByType(lignes, "recette");
                         const depenses = sumByType(lignes, "depense");
+                        const currency = getBudgetCurrency(budget);
                         return (
                           <tr key={budget.id} className="border-b border-[#E5E7EB] hover:bg-[#F4F7FA]">
                             <td className="px-4 py-3 font-semibold text-[#1F2937]">{project?.titre ?? budget.projet?.titre ?? budget.projet_id ?? "-"}</td>
                             <td className="px-4 py-3 text-[#6B7280]">{project?.chef_projet ? `${project.chef_projet.prenom ?? ""} ${project.chef_projet.nom}`.trim() : "-"}</td>
                             <td className="px-4 py-3 text-[#6B7280]">{project?.departement?.nom ?? budget.departement_id}</td>
                             <td className="px-4 py-3 text-[#6B7280]">{budget.exercice?.libelle ?? budget.exercice_id}</td>
-                            <td className="px-4 py-3 font-semibold text-[#1F2937]">{formatAmount(depenses)}</td>
-                            <td className="px-4 py-3 font-semibold text-[#1F2937]">{formatAmount(recettes)}</td>
-                            <td className={`px-4 py-3 font-semibold ${(recettes - depenses) >= 0 ? "text-[#16A34A]" : "text-[#DC2626]"}`}>{formatAmount(recettes - depenses)}</td>
+                            <td className="px-4 py-3 font-semibold text-[#1F2937]">{formatAmount(depenses, currency)}</td>
+                            <td className="px-4 py-3 font-semibold text-[#1F2937]">{formatAmount(recettes, currency)}</td>
+                            <td className={`px-4 py-3 font-semibold ${(recettes - depenses) >= 0 ? "text-[#16A34A]" : "text-[#DC2626]"}`}>{formatAmount(recettes - depenses, currency)}</td>
                             <td className="px-4 py-3">
                               <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${budgetStatusTones[budget.statut]}`}>{budgetStatusLabels[budget.statut]}</span>
                             </td>
-                            <td className="px-4 py-3 text-[#6B7280]">{budget.date_creation ? new Date(budget.date_creation).toLocaleDateString("fr-FR") : "-"}</td>
+                            <td className="px-4 py-3 text-[#6B7280]">{formatDate(budget.date_creation)}</td>
                             <td className="px-4 py-3">
                               {analysisOnly ? (
                                 isPendingAnalysis(budget.statut) ? (
@@ -169,6 +175,7 @@ export function ManagerBudgetsPage({ analysisOnly = false }: { analysisOnly?: bo
       <PopupModal maxWidth="max-w-7xl" open={Boolean(selectedDetails)} title="Details du budget" onClose={() => setSelectedDetails(null)}>
         {selectedDetails ? (
           <div className="grid gap-5">
+            <CurrencySelector variant="modal" />
             <section className="grid gap-4 rounded-lg bg-[#F9FAFB] p-4 ring-1 ring-[#E5E7EB] md:grid-cols-3">
               <div className="rounded-md bg-white p-4 shadow-sm ring-1 ring-[#E5E7EB]">
                 <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Budget</p>
@@ -183,6 +190,7 @@ export function ManagerBudgetsPage({ analysisOnly = false }: { analysisOnly?: bo
               <div className="rounded-md bg-white p-4 shadow-sm ring-1 ring-[#E5E7EB]">
                 <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Statut</p>
                 <span className={`mt-1 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${budgetStatusTones[selectedDetails.budget.statut]}`}>{budgetStatusLabels[selectedDetails.budget.statut]}</span>
+                <p className="mt-2 text-xs font-semibold text-[#6B7280]">Devise: {getBudgetCurrency(selectedDetails.budget)}</p>
               </div>
               <div className="rounded-md bg-white p-4 shadow-sm ring-1 ring-[#E5E7EB]">
                 <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Chef de projet</p>
@@ -195,22 +203,22 @@ export function ManagerBudgetsPage({ analysisOnly = false }: { analysisOnly?: bo
               </div>
               <div className="rounded-md bg-white p-4 shadow-sm ring-1 ring-[#E5E7EB]">
                 <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Date de soumission</p>
-                <p className="mt-1 font-semibold text-[#1F2937]">{selectedDetails.budget.date_creation ? new Date(selectedDetails.budget.date_creation).toLocaleDateString("fr-FR") : "-"}</p>
+                <p className="mt-1 font-semibold text-[#1F2937]">{formatDate(selectedDetails.budget.date_creation)}</p>
               </div>
             </section>
 
             <section className="grid gap-3 sm:grid-cols-3">
               <div className="rounded-md bg-[#F9FAFB] p-4 ring-1 ring-[#E5E7EB]">
                 <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Depenses prevues</p>
-                <p className="mt-2 text-xl font-bold text-[#0F3D5E]">{formatAmount(sumByType(selectedDetails.lignes, "depense"))}</p>
+                <p className="mt-2 text-xl font-bold text-[#0F3D5E]">{formatAmount(sumByType(selectedDetails.lignes, "depense"), getBudgetCurrency(selectedDetails.budget))}</p>
               </div>
               <div className="rounded-md bg-[#F9FAFB] p-4 ring-1 ring-[#E5E7EB]">
                 <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Recettes prevues</p>
-                <p className="mt-2 text-xl font-bold text-[#15803D]">{formatAmount(sumByType(selectedDetails.lignes, "recette"))}</p>
+                <p className="mt-2 text-xl font-bold text-[#15803D]">{formatAmount(sumByType(selectedDetails.lignes, "recette"), getBudgetCurrency(selectedDetails.budget))}</p>
               </div>
               <div className="rounded-md bg-[#F9FAFB] p-4 ring-1 ring-[#E5E7EB]">
                 <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Total realise</p>
-                <p className="mt-2 text-xl font-bold text-[#1F2937]">{formatAmount(selectedDetails.budget.montant_total_realise ?? 0)}</p>
+                <p className="mt-2 text-xl font-bold text-[#1F2937]">{formatAmount(selectedDetails.budget.montant_total_realise ?? 0, getBudgetCurrency(selectedDetails.budget))}</p>
               </div>
             </section>
 
@@ -236,8 +244,8 @@ export function ManagerBudgetsPage({ analysisOnly = false }: { analysisOnly?: bo
                         <td className="px-4 py-3 font-semibold text-[#1F2937]">{ligne.libelle}</td>
                         <td className="px-4 py-3 capitalize text-[#6B7280]">{ligne.type_ligne}</td>
                         <td className="px-4 py-3 text-[#6B7280]">{ligne.categorie?.nom ?? ligne.categorie_id}</td>
-                        <td className="px-4 py-3 text-right font-semibold text-[#1F2937]">{formatAmount(ligne.montant_prevu)}</td>
-                        <td className="px-4 py-3 text-right font-semibold text-[#6B7280]">{formatAmount(ligne.montant_realise ?? 0)}</td>
+                        <td className="px-4 py-3 text-right font-semibold text-[#1F2937]">{formatAmount(ligne.montant_prevu, getBudgetCurrency(selectedDetails.budget))}</td>
+                        <td className="px-4 py-3 text-right font-semibold text-[#6B7280]">{formatAmount(ligne.montant_realise ?? 0, getBudgetCurrency(selectedDetails.budget))}</td>
                       </tr>
                     ))}
                   </tbody>

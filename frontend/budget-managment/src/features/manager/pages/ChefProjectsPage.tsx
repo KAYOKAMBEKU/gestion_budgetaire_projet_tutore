@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { getApiErrorMessage } from "../../../api/client";
 import { PopupModal } from "../../../components/ui/PopupModal";
@@ -9,7 +9,7 @@ import type { ProjetCreate } from "../../../types/projet";
 import { ManagerSidebar } from "../components/ManagerSidebar";
 import { ProjectStatusBadge } from "../components/ProjectStatusBadge";
 import { Toast } from "../../administration/components/Toast";
-import { useActiveExercice } from "../hooks/useManagerBudget";
+import { useActiveExercice, useBudgetsByProjects } from "../hooks/useManagerBudget";
 import { useCreateProject, useChefProjects } from "../hooks/useManagerProjects";
 
 function AccessMessage({ title, message }: { title: string; message: string }) {
@@ -40,6 +40,9 @@ export function ChefProjectsPage() {
   const [form, setForm] = useState(emptyForm);
 
   const projectsQuery = useChefProjects(currentUser?.id);
+  const projectIds = useMemo(() => (projectsQuery.data ?? []).map((project) => project.id), [projectsQuery.data]);
+  const budgetsQuery = useBudgetsByProjects(projectIds);
+  const budgetProjectIds = useMemo(() => new Set((budgetsQuery.data ?? []).map((budget) => budget.projet_id)), [budgetsQuery.data]);
   const activeExerciceQuery = useActiveExercice();
   const createProject = useCreateProject();
 
@@ -121,6 +124,11 @@ export function ChefProjectsPage() {
               Aucun exercice budgetaire ouvert. La creation de projet reste indisponible.
             </div>
           ) : null}
+          {budgetsQuery.isError ? (
+            <div className="rounded-lg border border-[#FECACA] bg-[#FEE2E2] px-4 py-3 text-left text-sm font-medium text-[#DC2626]">
+              {getApiErrorMessage(budgetsQuery.error)}
+            </div>
+          ) : null}
 
           <section className="rounded-lg bg-white p-6 shadow-sm ring-1 ring-[#E5E7EB]">
             {projectsQuery.isLoading ? (
@@ -146,9 +154,15 @@ export function ChefProjectsPage() {
                         <td className="px-4 py-3"><ProjectStatusBadge status={project.statut} /></td>
                         <td className="px-4 py-3">
                           <div className="flex flex-wrap gap-3">
-                            <Link className="text-[#16A34A] hover:text-[#166F48] hover:underline" to={`/chef/budgets?projectId=${project.id}`}>
-                              Creer le budget
-                            </Link>
+                            {budgetsQuery.isLoading ? (
+                              <span className="text-[#6B7280]">Verification...</span>
+                            ) : budgetProjectIds.has(project.id) ? (
+                              <span className="text-[#9CA3AF]">-</span>
+                            ) : (
+                              <Link className="text-[#16A34A] hover:text-[#166F48] hover:underline" to={`/chef/budgets?projectId=${project.id}`}>
+                                Creer le budget
+                              </Link>
+                            )}
                           </div>
                         </td>
                       </tr>

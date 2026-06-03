@@ -18,6 +18,7 @@ export interface Budget {
   reference: string;
   libelle: string;
   description?: string | null;
+  devise?: "FC" | "USD";
   montant_total_prevu: number;
   montant_total_realise: number;
   total_recettes_realisees?: number;
@@ -62,6 +63,8 @@ export interface BudgetCreate {
   reference: string;
   libelle: string;
   description?: string;
+  devise?: "FC" | "USD";
+  montant_total_prevu?: number;
   projet_id: number;
 }
 

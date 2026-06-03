@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getApiErrorMessage } from "../../../../api/client";
+import { CurrencySelector } from "../../../../components/ui/CurrencySelector";
 import { PopupModal } from "../../../../components/ui/PopupModal";
 import { useAuth } from "../../../../context/AuthContext";
+import { useCurrency } from "../../../../context/CurrencyContext";
 import { useAppDispatch } from "../../../../store";
 import { showToast } from "../../../../store/slices/uiSlice";
 import { budgetService } from "../../../../services/budgetService";
@@ -12,7 +14,9 @@ import { validationBudgetService } from "../../../../services/validationBudgetSe
 import type { Budget } from "../../../../types/budget";
 import type { LigneBudgetaire } from "../../../../types/ligneBudgetaire";
 import type { Projet } from "../../../../types/projet";
+import { formatDate, formatDateRange } from "../../../../utils/formatDate";
 import { budgetStatusLabels, budgetStatusTones, sumByType } from "../../../manager/utils/budgetAnalysis";
+import { getBudgetCurrency } from "../../../manager/utils/budgetCurrency";
 import { formatAmount } from "../../../manager/utils/formatAmount";
 import { useApproveBudget, useRejectBudget, useStartBudgetExecution, useSubmittedBudgets } from "../../hooks/useBudgetValidation";
 import { ConfirmModal } from "../ConfirmModal";
@@ -43,6 +47,7 @@ function useBudgetDetails(budget?: Budget | null) {
 function BudgetDetailPanel({ budget, lines, project }: { budget: Budget; lines: LigneBudgetaire[]; project?: Projet }) {
   const recettesPrevues = sumByType(lines, "recette");
   const depensesPrevues = sumByType(lines, "depense");
+  const currency = getBudgetCurrency(budget);
 
   return (
     <div className="grid gap-5 text-left">
@@ -62,30 +67,30 @@ function BudgetDetailPanel({ budget, lines, project }: { budget: Budget; lines: 
         </div>
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Dates projet</p>
-          <p className="mt-1 font-semibold text-[#1F2937]">{project?.date_debut_prevue ?? "-"} au {project?.date_fin_prevue ?? "-"}</p>
+          <p className="mt-1 font-semibold text-[#1F2937]">{formatDateRange(project?.date_debut_prevue, project?.date_fin_prevue)}</p>
         </div>
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Budget previsionnel</p>
-          <p className="mt-1 font-semibold text-[#1F2937]">{formatAmount(depensesPrevues)} depenses</p>
+          <p className="mt-1 font-semibold text-[#1F2937]">{formatAmount(depensesPrevues, currency)} depenses</p>
         </div>
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">Budget realise</p>
-          <p className="mt-1 font-semibold text-[#1F2937]">{formatAmount(budget.total_depenses_realisees ?? 0)}</p>
+          <p className="mt-1 font-semibold text-[#1F2937]">{formatAmount(budget.total_depenses_realisees ?? 0, currency)}</p>
         </div>
       </section>
 
       <section className="grid gap-3 sm:grid-cols-3">
         <div className="rounded-lg bg-[#FEE2E2] p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-[#DC2626]">Depenses prevues</p>
-          <p className="mt-2 font-bold text-[#B91C1C]">{formatAmount(depensesPrevues)}</p>
+          <p className="mt-2 font-bold text-[#B91C1C]">{formatAmount(depensesPrevues, currency)}</p>
         </div>
         <div className="rounded-lg bg-[#DCFCE7] p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-[#15803D]">Recettes prevues</p>
-          <p className="mt-2 font-bold text-[#15803D]">{formatAmount(recettesPrevues)}</p>
+          <p className="mt-2 font-bold text-[#15803D]">{formatAmount(recettesPrevues, currency)}</p>
         </div>
         <div className="rounded-lg bg-[#DBEAFE] p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-[#2563EB]">Solde previsionnel</p>
-          <p className="mt-2 font-bold text-[#1D4ED8]">{formatAmount(recettesPrevues - depensesPrevues)}</p>
+          <p className="mt-2 font-bold text-[#1D4ED8]">{formatAmount(recettesPrevues - depensesPrevues, currency)}</p>
         </div>
       </section>
 
@@ -109,8 +114,8 @@ function BudgetDetailPanel({ budget, lines, project }: { budget: Budget; lines: 
                 </td>
                 <td className="px-4 py-3 capitalize text-[#6B7280]">{line.type_ligne}</td>
                 <td className="px-4 py-3 text-[#6B7280]">{line.categorie?.nom ?? line.categorie_id}</td>
-                <td className="px-4 py-3 font-semibold text-[#1F2937]">{formatAmount(line.montant_prevu)}</td>
-                <td className="px-4 py-3 text-[#6B7280]">{formatAmount(line.montant_realise ?? 0)}</td>
+                <td className="px-4 py-3 font-semibold text-[#1F2937]">{formatAmount(line.montant_prevu, currency)}</td>
+                <td className="px-4 py-3 text-[#6B7280]">{formatAmount(line.montant_realise ?? 0, currency)}</td>
               </tr>
             ))}
           </tbody>
@@ -210,6 +215,7 @@ function BudgetDecisionModal({
 }
 
 export function SubmittedBudgetsList({ approvedOnly = false }: { approvedOnly?: boolean }) {
+  useCurrency();
   const budgetsQuery = useSubmittedBudgets();
   const approvedQuery = useQuery({
     queryKey: ["budgets", "admin-approved-list"],
@@ -277,11 +283,11 @@ export function SubmittedBudgetsList({ approvedOnly = false }: { approvedOnly?: 
                   <td className="px-4 py-3 text-[#6B7280]">{budget.projet?.titre ?? budget.projet_id}</td>
                   <td className="px-4 py-3 text-[#6B7280]">{budget.projet?.departement?.nom ?? budget.departement_id}</td>
                   <td className="px-4 py-3 text-[#6B7280]">{budget.exercice?.libelle ?? budget.exercice_id}</td>
-                  <td className="px-4 py-3 font-semibold text-[#1F2937]">{formatAmount(Number(budget.montant_total_prevu ?? 0))}</td>
+                  <td className="px-4 py-3 font-semibold text-[#1F2937]">{formatAmount(Number(budget.montant_total_prevu ?? 0), getBudgetCurrency(budget))}</td>
                   <td className="px-4 py-3">
                     <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${budgetStatusTones[budget.statut]}`}>{budgetStatusLabels[budget.statut]}</span>
                   </td>
-                  <td className="px-4 py-3 text-[#6B7280]">{budget.date_creation ? new Date(budget.date_creation).toLocaleDateString("fr-FR") : "-"}</td>
+                  <td className="px-4 py-3 text-[#6B7280]">{formatDate(budget.date_creation)}</td>
                   <td className="px-4 py-3 text-right">
                     <button className="text-sm font-semibold text-[#15803D] hover:text-[#15803D]" onClick={() => setSelectedBudget(budget)}>
                       Details
@@ -297,6 +303,7 @@ export function SubmittedBudgetsList({ approvedOnly = false }: { approvedOnly?: 
       <PopupModal open={Boolean(selectedBudget)} title={selectedBudget ? `Budget ${selectedBudget.reference}` : "Budget"} onClose={() => setSelectedBudget(null)}>
         {selectedBudget ? (
           <div className="grid gap-5">
+            <CurrencySelector variant="modal" />
             <BudgetDetailPanel budget={selectedBudget} lines={details.linesQuery.data ?? []} project={details.projectQuery.data} />
             <section className="rounded-lg bg-white/30 p-4 text-left">
               <h3 className="text-sm font-bold uppercase tracking-wide text-[#6B7280]">Validation Gestionnaire</h3>

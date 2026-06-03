@@ -1,8 +1,10 @@
 import { Link } from "react-router-dom";
 import { getApiErrorMessage } from "../../../api/client";
 import { useAuth } from "../../../context/AuthContext";
+import { formatDateRange } from "../../../utils/formatDate";
 import { ComptableSidebar } from "../components/ComptableSidebar";
 import { useExecutableBudgets } from "../hooks/useComptableBudget";
+import { getBudgetCurrency } from "../../manager/utils/budgetCurrency";
 import { formatAmount } from "../../manager/utils/formatAmount";
 
 function AccessMessage({ title, message }: { title: string; message: string }) {
@@ -88,14 +90,14 @@ export function ComptableBudgetsPage({ view = "budgets" }: { view?: "budgets" | 
                         <td className="px-4 py-3 font-semibold text-[#1F2937]">{budget.projet?.titre ?? budget.projet_id ?? "-"}</td>
                         <td className="px-4 py-3 text-[#6B7280]">{budget.projet?.departement?.nom ?? budget.departement_id}</td>
                         <td className="px-4 py-3 text-[#6B7280]">{budget.exercice?.libelle ?? budget.exercice_id}</td>
-                        <td className="px-4 py-3 font-semibold text-[#1F2937]">{formatAmount(budget.montant_total_prevu ?? 0)}</td>
+                        <td className="px-4 py-3 font-semibold text-[#1F2937]">{formatAmount(budget.montant_total_prevu ?? 0, getBudgetCurrency(budget))}</td>
                         <td className="px-4 py-3">
                           <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${budget.statut === "en_execution" ? "bg-[#DBEAFE] text-[#2563EB] ring-blue-200" : "bg-[#DCFCE7] text-[#15803D] ring-[#BBF7D0]"}`}>
                             {budget.statut === "en_execution" ? "En execution" : "Approuve"}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-[#6B7280]">{budget.projet?.date_debut_prevue ?? "-"} au {budget.projet?.date_fin_prevue ?? "-"}</td>
-                        <td className="px-4 py-3 text-[#6B7280]">{budget.projet?.date_debut_prevue ?? "-"} au {budget.projet?.date_fin_prevue ?? "-"}</td>
+                        <td className="px-4 py-3 text-[#6B7280]">{formatDateRange(budget.projet?.date_debut_prevue, budget.projet?.date_fin_prevue)}</td>
+                        <td className="px-4 py-3 text-[#6B7280]">{formatDateRange(budget.projet?.date_debut_prevue, budget.projet?.date_fin_prevue)}</td>
                         <td className="px-4 py-3">
                           <Link className="font-semibold text-[#15803D] hover:text-[#166F48]" to={`/comptable/budgets/${budget.id}`}>
                             {actionLabels[view]}

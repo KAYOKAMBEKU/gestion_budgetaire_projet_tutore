@@ -2,7 +2,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Literal, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 TypeMouvement = Literal["entree", "sortie"]
@@ -22,6 +22,24 @@ class MouvementFinancierBase(BaseModel):
     reference_paiement: Optional[str] = Field(None, max_length=150)
     piece_justificative: Optional[str] = Field(None, max_length=255)
     model_config = ConfigDict(extra="forbid")
+
+    @field_validator("mode_paiement")
+    def _validate_mode_paiement(cls, v):
+        if v is None:
+            return v
+        mapping = {
+            "cash": "Cash",
+            "mobile money": "Mobile Money",
+            "mobilemoney": "Mobile Money",
+            "banque": "Banque",
+        }
+        key = str(v).strip().lower()
+        if key in mapping:
+            return mapping[key]
+        # accept already-correct values
+        if v in mapping.values():
+            return v
+        raise ValueError("mode_paiement invalide. Valeurs autorisees: Cash, Mobile Money, Banque")
 
 
 class MouvementFinancierCreate(MouvementFinancierBase):
@@ -52,6 +70,7 @@ class MouvementFinancierResponse(MouvementFinancierBase):
 class SyntheseFinanciereProjet(BaseModel):
     projet_id: Optional[int] = None
     budget_id: Optional[int] = None
+    devise: str = "FC"
     montant_realise_total: Decimal
     total_recettes_prevues: Decimal
     total_recettes_realisees: Decimal

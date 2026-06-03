@@ -13,6 +13,7 @@ class Budget(Base):
     reference = Column(String(100), unique=True, index=True, nullable=False)
     libelle = Column(String(150), nullable=False)
     description = Column(Text, nullable=True)
+    devise = Column(String(3), default="FC", nullable=False)
     montant_total_prevu = Column(Numeric(15, 2), default=0)
     montant_total_realise = Column(Numeric(15, 2), default=0)
     total_recettes_realisees = Column(Numeric(15, 2), default=0)
@@ -53,7 +54,7 @@ class Budget(Base):
     )
 
     def calculer_total_prevu(self):
-        total = sum((ligne.montant_prevu or 0) for ligne in self.lignes_budgetaires)
+        total = sum((ligne.montant_prevu or 0) for ligne in self.lignes_budgetaires if ligne.type_ligne == "depense")
         self.montant_total_prevu = total
         return self.montant_total_prevu
 

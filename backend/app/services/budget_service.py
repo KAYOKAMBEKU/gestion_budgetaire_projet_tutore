@@ -1,4 +1,6 @@
 from decimal import Decimal
+from datetime import datetime
+import random
 
 from sqlalchemy.orm import Session
 
@@ -107,7 +109,16 @@ def create_budget(db: Session, budget_in: BudgetCreate, current_user: User | Non
     if current_user is None:
         raise PermissionError("Authentification requise pour creer un budget.")
     data = schema_to_dict(budget_in, exclude_unset=False)
-    require_unique(get_budget_by_reference(db, data["reference"]), "Un budget avec cette reference existe deja")
+    # generate reference if not provided
+    if not data.get("reference"):
+        # loop until unique
+        while True:
+            candidate = f"BUD-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{random.randint(1000,9999)}"
+            if get_budget_by_reference(db, candidate) is None:
+                data["reference"] = candidate
+                break
+    else:
+        require_unique(get_budget_by_reference(db, data["reference"]), "Un budget avec cette reference existe deja")
 
     active_exercice = _get_active_exercice(db)
     if active_exercice is None:
@@ -134,8 +145,9 @@ def create_budget(db: Session, budget_in: BudgetCreate, current_user: User | Non
         reference=data["reference"],
         libelle=data["libelle"],
         description=data.get("description"),
+        devise=data.get("devise", "FC"),
         statut="brouillon",
-        montant_total_prevu=Decimal("0"),
+        montant_total_prevu=Decimal(data.get("montant_total_prevu") or 0),
         montant_total_realise=Decimal("0"),
         ecart_total=Decimal("0"),
         projet_id=projet.id,
@@ -303,7 +315,7 @@ def recalculate_budget_totals(db: Session, budget_id: int):
     total_depenses_prevues = decimal_sum(
         ligne.montant_prevu for ligne in budget.lignes_budgetaires if ligne.type_ligne == "depense"
     )
-    budget.montant_total_prevu = decimal_sum(ligne.montant_prevu for ligne in budget.lignes_budgetaires)
+    budget.montant_total_prevu = total_depenses_prevues
     budget.total_recettes_realisees = total_recettes
     budget.total_depenses_realisees = total_depenses
     budget.montant_total_realise = total_depenses
