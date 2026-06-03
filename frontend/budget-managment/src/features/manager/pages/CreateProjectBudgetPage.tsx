@@ -501,7 +501,7 @@ export function CreateProjectBudgetPage() {
     }
 
     setSelectedProjectId(projectId ?? "");
-    setBudgetForm({ reference: "", libelle: "", description: "" });
+    setBudgetForm({ libelle: "", description: "" });
     setPlannedBudgetAmount("");
     setBudgetDates({
       date_debut: project?.date_debut_prevue ?? "",

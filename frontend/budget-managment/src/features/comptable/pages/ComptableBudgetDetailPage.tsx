@@ -37,6 +37,8 @@ const emptyForm = {
   piece_justificative: "",
 };
 
+// This page is only accessible to Comptable users. It displays the details of a budget and allows the comptable to record financial movements (entrees and sorties) related to that budget.
+
 function AccessMessage({ title, message }: { title: string; message: string }) {
   return (
     <main className="grid min-h-screen place-items-center bg-[#F4F7FA] p-6">
@@ -147,7 +149,7 @@ export function ComptableBudgetDetailPage() {
       description: descriptionParts.join("\n") || undefined,
       montant: Number(form.montant),
       date_mouvement: form.date_mouvement,
-      mode_paiement: form.mode_paiement || undefined,
+      mode_paiement: (form.mode_paiement || undefined) as "Cash" | "Mobile Money" | "Banque" | undefined,
       // reference_paiement is generated server-side; do not send from client
       piece_justificative: form.piece_justificative || undefined,
     };

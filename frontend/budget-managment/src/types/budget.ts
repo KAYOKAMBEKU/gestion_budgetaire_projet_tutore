@@ -60,7 +60,7 @@ export interface Budget {
 }
 
 export interface BudgetCreate {
-  reference: string;
+  reference?: string;
   libelle: string;
   description?: string;
   devise?: "FC" | "USD";
