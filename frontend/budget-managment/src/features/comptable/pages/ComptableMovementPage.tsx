@@ -343,6 +343,7 @@ export function ComptableMovementPage({
                     </option>
                     {(isSortie ? depenseLines : recetteLines).map((ligne) => (
                       <option key={ligne.id} value={ligne.id}>
+                        {ligne.activite ? `${ligne.activite} / ` : ""}
                         {ligne.libelle} -{" "}
                         {formatAmount(ligne.montant_prevu, currency)}
                       </option>

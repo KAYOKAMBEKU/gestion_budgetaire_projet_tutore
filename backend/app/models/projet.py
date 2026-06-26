@@ -21,6 +21,7 @@ class Projet(Base):
     date_fin_prevue = Column(Date, nullable=True)
     resultat_attendu = Column(Text, nullable=True)
     cout_estime = Column(Numeric(15, 2), default=0)
+    devise = Column(String(3), default="FC", nullable=False)
     budget_realise_total = Column(Numeric(15, 2), default=0)
 
     departement_id = Column(Integer, ForeignKey("departements.id"), nullable=False)

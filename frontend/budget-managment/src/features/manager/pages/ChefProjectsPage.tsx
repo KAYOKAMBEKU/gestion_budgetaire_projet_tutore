@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { getApiErrorMessage } from "../../../api/client";
 import { PopupModal } from "../../../components/ui/PopupModal";
+import { CurrencySelector } from "../../../components/ui/CurrencySelector";
 import { useAuth } from "../../../context/AuthContext";
 import { useAppDispatch } from "../../../store";
 import { showToast } from "../../../store/slices/uiSlice";
@@ -31,6 +32,7 @@ const emptyForm: Omit<ProjetCreate, "departement_id" | "exercice_id"> = {
   date_debut_prevue: "",
   date_fin_prevue: "",
   cout_estime: undefined,
+  devise: "FC",
 };
 
 export function ChefProjectsPage() {
@@ -67,6 +69,10 @@ export function ChefProjectsPage() {
       dispatch(showToast({ message: "La date de fin du projet doit etre posterieure a la date de debut.", type: "error" }));
       return;
     }
+    if (!form.cout_estime || form.cout_estime <= 0) {
+      dispatch(showToast({ message: "Veuillez renseigner un cout previsionnel valide.", type: "error" }));
+      return;
+    }
 
     createProject.mutate(
       {
@@ -77,6 +83,7 @@ export function ChefProjectsPage() {
         date_debut_prevue: form.date_debut_prevue || undefined,
         date_fin_prevue: form.date_fin_prevue || undefined,
         cout_estime: form.cout_estime,
+        devise: form.devise,
         departement_id: currentUser.departement_id,
         exercice_id: activeExerciceQuery.data.id,
       },
@@ -207,7 +214,7 @@ export function ChefProjectsPage() {
             Resultat attendu
             <textarea className="min-h-20 rounded-md border border-[#E5E7EB] px-3 py-2 font-normal" value={form.resultat_attendu} onChange={(event) => updateForm("resultat_attendu", event.target.value)} />
           </label>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <label className="grid gap-1 text-sm font-semibold text-[#374151]">
               Debut prevu
               <input className="rounded-md border border-[#E5E7EB] px-3 py-2 font-normal" type="date" value={form.date_debut_prevue} onChange={(event) => updateForm("date_debut_prevue", event.target.value)} />
@@ -216,10 +223,17 @@ export function ChefProjectsPage() {
               Fin prevue
               <input className="rounded-md border border-[#E5E7EB] px-3 py-2 font-normal" type="date" value={form.date_fin_prevue} onChange={(event) => updateForm("date_fin_prevue", event.target.value)} />
             </label>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 sm:items-end">
             <label className="grid gap-1 text-sm font-semibold text-[#374151]">
-              Cout estime
-              <input className="rounded-md border border-[#E5E7EB] px-3 py-2 font-normal" min="0" type="number" value={form.cout_estime ?? ""} onChange={(event) => updateForm("cout_estime", event.target.value ? Number(event.target.value) : undefined)} />
+              Cout previsionnel *
+              <input className="rounded-md border border-[#E5E7EB] px-3 py-2 font-normal" min="0.01" required step="0.01" type="number" value={form.cout_estime ?? ""} onChange={(event) => updateForm("cout_estime", event.target.value ? Number(event.target.value) : undefined)} />
             </label>
+            <CurrencySelector
+              value={form.devise ?? "FC"}
+              variant="modal"
+              onChange={(devise) => updateForm("devise", devise)}
+            />
           </div>
           <div className="rounded-md bg-[#F9FAFB] px-3 py-2 text-sm text-[#6B7280]">
             Exercice: <span className="font-semibold text-[#1F2937]">{activeExerciceQuery.data?.libelle ?? "Aucun exercice ouvert"}</span>

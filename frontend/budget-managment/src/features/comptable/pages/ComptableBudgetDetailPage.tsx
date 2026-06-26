@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { apiClient } from "../../../api/client";
 import { getApiErrorMessage } from "../../../api/client";
 import { CurrencySelector } from "../../../components/ui/CurrencySelector";
 import { PopupModal } from "../../../components/ui/PopupModal";
@@ -62,6 +63,7 @@ export function ComptableBudgetDetailPage() {
     false,
   );
   const [form, setForm] = useState(emptyForm);
+  const [exportingPdf, setExportingPdf] = useState(false);
 
   const budget = contextQuery.data?.budget;
   const lignes = useMemo(
@@ -79,10 +81,11 @@ export function ComptableBudgetDetailPage() {
   );
   const canRecord = budget?.statut === "en_execution";
 
-  function openForm(type: TypeMouvementFinancier) {
+  function openForm(type: TypeMouvementFinancier, lineId?: number) {
     setForm({
       ...emptyForm,
       type_mouvement: type,
+      ligne_budgetaire_id: lineId ? String(lineId) : "",
       date_mouvement: new Date().toISOString().slice(0, 10),
     });
     setFormOpen(type);
@@ -176,6 +179,36 @@ export function ComptableBudgetDetailPage() {
           }),
         ),
     });
+  }
+
+  async function exportBudgetLinesPdf() {
+    if (!budget?.id) {
+      return;
+    }
+    setExportingPdf(true);
+    try {
+      const { data } = await apiClient.get<ArrayBuffer>(
+        `/rapports-budgetaires/budget-lines/${budget.id}/export-pdf`,
+        { responseType: "arraybuffer" },
+      );
+      const pdfBlob = new Blob([data], { type: "application/pdf" });
+      if (pdfBlob.size === 0) {
+        throw new Error("Le PDF genere est vide.");
+      }
+      const url = URL.createObjectURL(pdfBlob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `etat-lignes-budgetaires-${budget.reference}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      dispatch(showToast({ message: "Etat PDF genere.", type: "success" }));
+    } catch (error) {
+      dispatch(showToast({ message: getApiErrorMessage(error), type: "error" }));
+    } finally {
+      setExportingPdf(false);
+    }
   }
 
   if (authLoading) {
@@ -376,6 +409,14 @@ export function ComptableBudgetDetailPage() {
 
           <section className="flex flex-wrap justify-end gap-3 rounded-lg bg-white p-6 shadow-sm ring-1 ring-[#E5E7EB]">
             <button
+              className="rounded-md bg-[#0F3D5E] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0A2D46] disabled:opacity-60"
+              disabled={exportingPdf}
+              onClick={exportBudgetLinesPdf}
+              type="button"
+            >
+              {exportingPdf ? "Generation PDF..." : "Exporter etat de sortie PDF"}
+            </button>
+            <button
               className="btn-primary rounded-md px-4 py-2 text-sm font-semibold text-white hover:bg-[#166F48] disabled:opacity-60"
               disabled={!canRecord}
               onClick={() => openForm("entree")}
@@ -393,14 +434,24 @@ export function ComptableBudgetDetailPage() {
 
           <section className="rounded-lg bg-white p-6 text-left shadow-sm ring-1 ring-[#E5E7EB]">
             <h2 className="text-lg font-bold text-[#1F2937]">
-              Lignes budgetaires prevues
+              Etat de suivi budgetaire
             </h2>
+            <p className="mt-1 text-sm text-[#6B7280]">
+              Cliquez sur une ligne pour enregistrer l'entree ou la sortie
+              correspondante.
+            </p>
             <div className="mt-4 overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead className="bg-[#F9FAFB]">
                   <tr>
                     <th className="px-4 py-3 font-semibold text-[#374151]">
                       Ligne
+                    </th>
+                    <th className="px-4 py-3 font-semibold text-[#374151]">
+                      Activite
+                    </th>
+                    <th className="px-4 py-3 font-semibold text-[#374151]">
+                      Titre
                     </th>
                     <th className="px-4 py-3 font-semibold text-[#374151]">
                       Type
@@ -414,6 +465,9 @@ export function ComptableBudgetDetailPage() {
                     <th className="px-4 py-3 font-semibold text-[#374151]">
                       Ecart
                     </th>
+                    <th className="px-4 py-3 font-semibold text-[#374151]">
+                      Alerte
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -421,10 +475,29 @@ export function ComptableBudgetDetailPage() {
                     const executionLine = execution?.lignes_budgetaires.find(
                       (item) => item.ligne_budgetaire_id === ligne.id,
                     );
+                    const realised = Number(
+                      executionLine?.montant_realise ?? ligne.montant_realise ?? 0,
+                    );
+                    const planned = Number(ligne.montant_prevu ?? 0);
+                    const isOverBudget = ligne.type_ligne === "depense" && realised > planned;
+                    const isOnTrack = !isOverBudget;
                     return (
-                      <tr key={ligne.id} className="border-b border-[#E5E7EB]">
+                      <tr
+                        key={ligne.id}
+                        className={`cursor-pointer border-b border-[#E5E7EB] ${isOverBudget ? "bg-[#FEF2F2]" : "bg-[#F0FDF4]"} hover:bg-[#EFF6FF]`}
+                        onClick={() => openForm(ligne.type_ligne === "depense" ? "sortie" : "entree", ligne.id)}
+                      >
                         <td className="px-4 py-3 font-semibold text-[#1F2937]">
                           {ligne.libelle}
+                        </td>
+                        <td className="px-4 py-3 text-[#374151]">
+                          {ligne.activite || executionLine?.activite || "-"}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-[#6B7280]">
+                          <p className="font-semibold text-[#374151]">
+                            {ligne.grand_titre || executionLine?.grand_titre || "-"}
+                          </p>
+                          <p>{ligne.sous_titre || executionLine?.sous_titre || ""}</p>
                         </td>
                         <td className="px-4 py-3 capitalize text-[#6B7280]">
                           {ligne.type_ligne}
@@ -447,6 +520,13 @@ export function ComptableBudgetDetailPage() {
                               0,
                             currency,
                           )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span
+                            className={`rounded-full px-2.5 py-1 text-xs font-semibold ${isOnTrack ? "bg-[#DCFCE7] text-[#15803D]" : "bg-[#FEE2E2] text-[#DC2626]"}`}
+                          >
+                            {isOverBudget ? "Depassement" : "OK"}
+                          </span>
                         </td>
                       </tr>
                     );
@@ -563,6 +643,7 @@ export function ComptableBudgetDetailPage() {
                   : recetteLines
                 ).map((ligne) => (
                   <option key={ligne.id} value={ligne.id}>
+                    {ligne.activite ? `${ligne.activite} / ` : ""}
                     {ligne.libelle} -{" "}
                     {formatAmount(ligne.montant_prevu, currency)}
                   </option>

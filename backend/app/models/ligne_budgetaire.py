@@ -15,6 +15,9 @@ class LigneBudgetaire(Base):
     ecart_montant = Column(Numeric(15, 2), default=0)
     ecart_pourcentage = Column(Numeric(10, 2), default=0)
     type_ligne = Column(String(50), nullable=False)
+    activite = Column(String(150), nullable=True)
+    grand_titre = Column(String(150), nullable=True)
+    sous_titre = Column(String(150), nullable=True)
 
     budget_id = Column(Integer, ForeignKey("budgets.id"), nullable=False)
     categorie_id = Column(Integer, ForeignKey("categories_budgetaires.id"), nullable=False)

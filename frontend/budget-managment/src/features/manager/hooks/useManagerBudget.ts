@@ -124,6 +124,9 @@ export function useCreateBudgetWithLines() {
           description: line.description,
           montant_prevu: line.montant_prevu,
           type_ligne: line.type_ligne,
+          activite: line.activite,
+          grand_titre: line.grand_titre,
+          sous_titre: line.sous_titre,
           categorie_id: line.categorie_id,
           budget_id: budget.id,
         };
@@ -155,6 +158,9 @@ export function useSaveBudgetDraftWithLines() {
           description: line.description,
           montant_prevu: line.montant_prevu,
           type_ligne: line.type_ligne,
+          activite: line.activite,
+          grand_titre: line.grand_titre,
+          sous_titre: line.sous_titre,
           categorie_id: line.categorie_id,
           budget_id: budget.id,
         };

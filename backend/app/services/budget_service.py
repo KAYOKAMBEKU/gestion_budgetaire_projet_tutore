@@ -145,9 +145,9 @@ def create_budget(db: Session, budget_in: BudgetCreate, current_user: User | Non
         reference=data["reference"],
         libelle=data["libelle"],
         description=data.get("description"),
-        devise=data.get("devise", "FC"),
+        devise=projet.devise or "FC",
         statut="brouillon",
-        montant_total_prevu=Decimal(data.get("montant_total_prevu") or 0),
+        montant_total_prevu=Decimal(projet.cout_estime or 0),
         montant_total_realise=Decimal("0"),
         ecart_total=Decimal("0"),
         projet_id=projet.id,
@@ -230,6 +230,22 @@ def _transition_budget(db: Session, budget_id: int, allowed: set[str], target: s
 
 
 def submit_budget(db: Session, budget_id: int):
+    budget = get_budget_by_id(db, budget_id)
+    if budget is None:
+        return None
+    project_cost = Decimal(budget.projet.cout_estime or 0) if budget.projet else Decimal("0")
+    planned_expenses = decimal_sum(
+        line.montant_prevu
+        for line in budget.lignes_budgetaires
+        if line.type_ligne == "depense"
+    )
+    if project_cost <= 0:
+        raise ValueError("Le projet doit avoir un cout previsionnel positif avant la creation de son budget.")
+    if planned_expenses != project_cost:
+        raise ValueError("Le total des depenses budgetaires doit correspondre au cout previsionnel du projet.")
+    budget.montant_total_prevu = project_cost
+    budget.devise = budget.projet.devise or "FC"
+    db.commit()
     return _transition_budget(db, budget_id, {"brouillon"}, "soumis_gestionnaire")
 
 
@@ -303,7 +319,11 @@ def recalculate_budget_totals(db: Session, budget_id: int):
                 if mouvement.type_mouvement == "sortie" and mouvement.ligne_budgetaire_id == ligne.id
             )
         else:
-            ligne.montant_realise = Decimal("0")
+            ligne.montant_realise = decimal_sum(
+                mouvement.montant
+                for mouvement in mouvements
+                if mouvement.type_mouvement == "entree" and mouvement.ligne_budgetaire_id == ligne.id
+            )
         ligne.ecart_montant = Decimal(ligne.montant_realise or 0) - Decimal(ligne.montant_prevu or 0)
         if Decimal(ligne.montant_prevu or 0) > 0:
             ligne.ecart_pourcentage = (ligne.ecart_montant / Decimal(ligne.montant_prevu)) * Decimal("100")

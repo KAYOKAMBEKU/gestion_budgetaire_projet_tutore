@@ -19,7 +19,11 @@ export function ManagerSidebar() {
     <>
       <aside className="flex h-screen flex-col border-r border-[#E5E7EB] bg-[#0F3D5E] p-4 lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 lg:w-72 lg:border-b-0">
         <div className="shrink-0 border-b border-white/10 px-1 pb-4 text-white">
-          <h1 className="text-lg font-bold">Bienvenue Gestionnaire</h1>
+          <h1 className="text-lg font-bold">
+            {isProjectManager
+              ? "Bienvenue chef de projet"
+              : "Bienvenue Gestionnaire"}
+          </h1>
         </div>
         <nav className="admin-sidebar-scroll mt-5 grid flex-1 content-start gap-2 overflow-y-auto pr-1">
           {isProjectManager ? (

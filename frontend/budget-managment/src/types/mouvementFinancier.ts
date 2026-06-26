@@ -41,6 +41,9 @@ export interface LigneExecutionBudgetaire {
   ligne_budgetaire_id: number;
   libelle: string;
   type_ligne: string;
+  activite?: string | null;
+  grand_titre?: string | null;
+  sous_titre?: string | null;
   montant_prevu: number;
   montant_realise: number;
   ecart_montant: number;

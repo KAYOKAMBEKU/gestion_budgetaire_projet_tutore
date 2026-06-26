@@ -13,6 +13,7 @@ export interface Projet {
   date_debut_prevue?: string | null;
   date_fin_prevue?: string | null;
   cout_estime: number;
+  devise: "FC" | "USD";
   budget_realise_total?: number;
   departement_id: number;
   exercice_id: number;
@@ -45,6 +46,7 @@ export interface ProjetCreate {
   date_debut_prevue?: string;
   date_fin_prevue?: string;
   cout_estime?: number;
+  devise?: "FC" | "USD";
   departement_id: number;
   exercice_id: number;
 }
@@ -59,6 +61,7 @@ export interface ProjetUpdate {
   date_debut_prevue?: string;
   date_fin_prevue?: string;
   cout_estime?: number;
+  devise?: "FC" | "USD";
   budget_realise_total?: number;
   exercice_id?: number;
 }

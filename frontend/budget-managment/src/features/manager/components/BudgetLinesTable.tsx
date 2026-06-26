@@ -18,6 +18,8 @@ export function BudgetLinesTable({ currency, lines, onRemove }: BudgetLinesTable
             <thead className="bg-[#F9FAFB] text-left text-xs uppercase tracking-wide text-[#374151]">
               <tr>
                 <th className="px-4 py-3">Libelle</th>
+                <th className="px-4 py-3">Activite</th>
+                <th className="px-4 py-3">Titre</th>
                 <th className="px-4 py-3">Type</th>
                 <th className="px-4 py-3">Categorie</th>
                 <th className="px-4 py-3">Details</th>
@@ -28,7 +30,7 @@ export function BudgetLinesTable({ currency, lines, onRemove }: BudgetLinesTable
             <tbody className="divide-y divide-[#E5E7EB]">
               {lines.length === 0 ? (
                 <tr>
-                  <td className="px-4 py-8 text-center text-[#6B7280]" colSpan={6}>
+                  <td className="px-4 py-8 text-center text-[#6B7280]" colSpan={8}>
                     Aucune ligne ajoutee.
                   </td>
                 </tr>
@@ -38,6 +40,11 @@ export function BudgetLinesTable({ currency, lines, onRemove }: BudgetLinesTable
                     <td className="px-4 py-3">
                       <p className="font-semibold text-[#1F2937]">{line.libelle}</p>
                       <p className="text-xs text-[#6B7280]">{line.description || "Sans description"}</p>
+                    </td>
+                    <td className="px-4 py-3 text-[#374151]">{line.activite || "-"}</td>
+                    <td className="px-4 py-3 text-xs text-[#6B7280]">
+                      <p className="font-semibold text-[#374151]">{line.grand_titre || "-"}</p>
+                      <p>{line.sous_titre || ""}</p>
                     </td>
                     <td className="px-4 py-3 capitalize text-[#6B7280]">{line.type_ligne}</td>
                     <td className="px-4 py-3 text-[#6B7280]">{line.categorie_nom}</td>

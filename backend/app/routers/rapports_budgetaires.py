@@ -33,6 +33,15 @@ def _require_report_export_access(user: User, type_rapport: str) -> None:
     )
 
 
+def _require_budget_lines_export_access(user: User) -> None:
+    if _is_admin(user) or _is_comptable(user):
+        return
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Votre role ne permet pas d'exporter cet etat budgetaire.",
+    )
+
+
 @router.post("/", response_model=RapportBudgetaireResponse, status_code=status.HTTP_201_CREATED)
 def create_rapport(rapport_in: RapportBudgetaireCreate, db: Session = Depends(get_db)):
     return rapport_budgetaire_service.create_rapport(db, rapport_in)
@@ -72,6 +81,27 @@ def export_admin_budget_report_pdf(
         filename, content = rapport_budgetaire_service.generate_admin_budget_report_pdf(db, type_rapport)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    return Response(
+        content=content,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Content-Length": str(len(content)),
+        },
+    )
+
+
+@router.get("/budget-lines/{budget_id}/export-pdf")
+def export_budget_lines_state_pdf(
+    budget_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_budget_lines_export_access(current_user)
+    result = rapport_budgetaire_service.generate_budget_lines_state_pdf(db, budget_id)
+    if result is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Budget introuvable")
+    filename, content = result
     return Response(
         content=content,
         media_type="application/pdf",
