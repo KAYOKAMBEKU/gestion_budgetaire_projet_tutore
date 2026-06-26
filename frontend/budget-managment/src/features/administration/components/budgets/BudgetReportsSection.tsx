@@ -9,7 +9,7 @@ import { currencies, emptyCurrencyTotals, getBudgetCurrency, getBudgetRiskAlerts
 import { formatAmount } from "../../../manager/utils/formatAmount";
 import { InlineError, LoadingState } from "../SectionHeader";
 
-type ReportOutputType = "general" | "execution" | "ecarts" | "departements";
+type ReportOutputType = "general" | "execution" | "ecarts" | "entrees" | "sorties" | "departements";
 type ChartRow = { label: string; value: number; valueType?: "amount" | "percent" | "count"; currency?: CurrencyTotals["currency"] };
 
 const sidebarBlue = "#0F3D5E";
@@ -18,8 +18,12 @@ const reportOutputLabels: Record<ReportOutputType, string> = {
   general: "Etat general budgetaire",
   execution: "Etat d'execution budgetaire",
   ecarts: "Etat des ecarts",
+  entrees: "Etat des entrees",
+  sorties: "Etat des sorties",
   departements: "Etat par departement",
 };
+
+const allReportOutputTypes = Object.keys(reportOutputLabels) as ReportOutputType[];
 
 type SaveFilePicker = (options: {
   suggestedName: string;
@@ -52,8 +56,19 @@ function getChartWidth(value: number, maxValue: number) {
   return `${Math.max(4, (Math.abs(value) / maxValue) * 100)}%`;
 }
 
-export function BudgetReportsSection() {
-  const [outputType, setOutputType] = useState<ReportOutputType>("general");
+interface BudgetReportsSectionProps {
+  allowedOutputTypes?: ReportOutputType[];
+  defaultOutputType?: ReportOutputType;
+  title?: string;
+}
+
+export function BudgetReportsSection({
+  allowedOutputTypes = allReportOutputTypes,
+  defaultOutputType = allowedOutputTypes[0] ?? "general",
+  title = "Rapports budgetaires",
+}: BudgetReportsSectionProps) {
+  const [outputType, setOutputType] = useState<ReportOutputType>(defaultOutputType);
+  const outputTypes = allowedOutputTypes.length > 0 ? allowedOutputTypes : allReportOutputTypes;
   const reportQuery = useQuery({
     queryKey: ["admin", "budget-reports-full"],
     queryFn: async () => {
@@ -187,6 +202,46 @@ export function BudgetReportsSection() {
       ];
     }
 
+    if (outputType === "entrees") {
+      return [
+        {
+          title: "Rapport des entrees",
+          subtitle: "Entrees prevues, realisees, ecarts et solde",
+          rows: totalsByCurrency.flatMap((total) => [
+            { label: `Entrees prevues ${total.currency}`, value: total.recettesPrevues, currency: total.currency },
+            { label: `Entrees realisees ${total.currency}`, value: total.recettesRealisees, currency: total.currency },
+            { label: `Ecart entrees ${total.currency}`, value: total.recettesRealisees - total.recettesPrevues, currency: total.currency },
+            { label: `Solde realise ${total.currency}`, value: total.recettesRealisees - total.depensesRealisees, currency: total.currency },
+          ]),
+        },
+        {
+          title: "Entrees par projet",
+          subtitle: "Realise moins previsionnel",
+          rows: reportRows.map((row) => ({ label: `${row.projet} (${row.currency})`, value: row.recettesRealisees - row.recettesPrevues, currency: row.currency })),
+        },
+      ];
+    }
+
+    if (outputType === "sorties") {
+      return [
+        {
+          title: "Rapport des sorties",
+          subtitle: "Sorties prevues, realisees, ecarts et solde",
+          rows: totalsByCurrency.flatMap((total) => [
+            { label: `Sorties prevues ${total.currency}`, value: total.depensesPrevues, currency: total.currency },
+            { label: `Sorties realisees ${total.currency}`, value: total.depensesRealisees, currency: total.currency },
+            { label: `Ecart sorties ${total.currency}`, value: total.depensesRealisees - total.depensesPrevues, currency: total.currency },
+            { label: `Solde realise ${total.currency}`, value: total.recettesRealisees - total.depensesRealisees, currency: total.currency },
+          ]),
+        },
+        {
+          title: "Sorties par projet",
+          subtitle: "Realise moins previsionnel",
+          rows: reportRows.map((row) => ({ label: `${row.projet} (${row.currency})`, value: row.depensesRealisees - row.depensesPrevues, currency: row.currency })),
+        },
+      ];
+    }
+
     if (outputType === "departements") {
       return [
         {
@@ -259,7 +314,7 @@ export function BudgetReportsSection() {
   return (
     <div className="grid gap-5">
       <div className="text-left">
-        <h2 className="text-xl font-bold text-[#1F2937]">Rapports budgetaires</h2>
+        <h2 className="text-xl font-bold text-[#1F2937]">{title}</h2>
         <p className="mt-1 text-sm text-[#6B7280]">Analyse previsionnel, realise, ecarts et taux d'execution.</p>
       </div>
       <div className="no-print flex flex-col gap-4 rounded-lg border border-[#B7E4CF] bg-[#ECFDF5] p-4 shadow-sm">
@@ -267,8 +322,9 @@ export function BudgetReportsSection() {
           <p className="text-sm font-semibold text-[#065F46]">Filtres de rapport</p>
           <p className="mt-1 text-xs text-[#047857]">Choisissez le type d'etat a afficher puis exportez-le en PDF.</p>
         </div>
-        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-          {Object.entries(reportOutputLabels).map(([value, label]) => {
+        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+          {outputTypes.map((value) => {
+            const label = reportOutputLabels[value];
             const active = outputType === value;
             return (
               <button
@@ -276,7 +332,7 @@ export function BudgetReportsSection() {
                   active ? "border-[#16A34A] bg-white text-[#065F46] shadow-sm ring-2 ring-[#86EFAC]" : "border-[#D1FAE5] bg-[#F8FAFC] text-[#374151] hover:border-[#A7F3D0] hover:bg-white"
                 }`}
                 key={value}
-                onClick={() => setOutputType(value as ReportOutputType)}
+                onClick={() => setOutputType(value)}
                 type="button"
               >
                 <span>{label}</span>
@@ -363,6 +419,19 @@ export function BudgetReportsSection() {
                 <th className="border border-[#0F3D5E] px-4 py-3 font-semibold text-white">Ecart</th>
                 <th className="border border-[#0F3D5E] px-4 py-3 font-semibold text-white">Taux</th>
               </tr>
+            ) : outputType === "entrees" || outputType === "sorties" ? (
+              <tr>
+                <th className="border border-[#0F3D5E] px-4 py-3 font-semibold text-white">Projet</th>
+                <th className="border border-[#0F3D5E] px-4 py-3 font-semibold text-white">Departement</th>
+                <th className="border border-[#0F3D5E] px-4 py-3 font-semibold text-white">Devise</th>
+                <th className="border border-[#0F3D5E] px-4 py-3 font-semibold text-white">Exercice</th>
+                <th className="border border-[#0F3D5E] px-4 py-3 font-semibold text-white">Statut</th>
+                <th className="border border-[#0F3D5E] px-4 py-3 font-semibold text-white">{outputType === "entrees" ? "Entrees prevues" : "Sorties prevues"}</th>
+                <th className="border border-[#0F3D5E] px-4 py-3 font-semibold text-white">{outputType === "entrees" ? "Entrees realisees" : "Sorties realisees"}</th>
+                <th className="border border-[#0F3D5E] px-4 py-3 font-semibold text-white">Ecart</th>
+                <th className="border border-[#0F3D5E] px-4 py-3 font-semibold text-white">Taux</th>
+                <th className="border border-[#0F3D5E] px-4 py-3 font-semibold text-white">Solde</th>
+              </tr>
             ) : (
               <tr>
                 <th className="border border-[#0F3D5E] px-4 py-3 font-semibold text-white">Projet</th>
@@ -396,8 +465,32 @@ export function BudgetReportsSection() {
                 </tr>
               ))
             ) : reportRows.length === 0 ? (
-              <tr><td className="border border-[#0F3D5E] px-4 py-8 text-center text-[#6B7280]" colSpan={outputType === "general" ? 10 : 11}>Aucun budget pour ces filtres.</td></tr>
-            ) : reportRows.map((row) => (
+              <tr><td className="border border-[#0F3D5E] px-4 py-8 text-center text-[#6B7280]" colSpan={outputType === "general" || outputType === "entrees" || outputType === "sorties" ? 10 : 11}>Aucun budget pour ces filtres.</td></tr>
+            ) : reportRows.map((row) => {
+              const mouvementPrevu = outputType === "entrees" ? row.recettesPrevues : row.depensesPrevues;
+              const mouvementRealise = outputType === "entrees" ? row.recettesRealisees : row.depensesRealisees;
+              const mouvementEcart = mouvementRealise - mouvementPrevu;
+              const mouvementTaux = mouvementPrevu > 0 ? (mouvementRealise / mouvementPrevu) * 100 : 0;
+              const soldeRealise = row.recettesRealisees - row.depensesRealisees;
+
+              if (outputType === "entrees" || outputType === "sorties") {
+                return (
+                  <tr key={row.budget.id}>
+                    <td className="border border-[#0F3D5E] px-4 py-3 font-semibold text-[#1F2937]">{row.projet}</td>
+                    <td className="border border-[#0F3D5E] px-4 py-3 text-[#6B7280]">{row.departement}</td>
+                    <td className="border border-[#0F3D5E] px-4 py-3 font-semibold text-[#1F2937]">{row.currency}</td>
+                    <td className="border border-[#0F3D5E] px-4 py-3 text-[#6B7280]">{row.exercice}</td>
+                    <td className="border border-[#0F3D5E] px-4 py-3 text-[#6B7280]">{row.budget.statut}</td>
+                    <td className="border border-[#0F3D5E] px-4 py-3">{formatAmount(mouvementPrevu, row.currency)}</td>
+                    <td className="border border-[#0F3D5E] px-4 py-3 font-semibold text-[#1F2937]">{formatAmount(mouvementRealise, row.currency)}</td>
+                    <td className="border border-[#0F3D5E] px-4 py-3">{formatAmount(mouvementEcart, row.currency)}</td>
+                    <td className="border border-[#0F3D5E] px-4 py-3">{mouvementTaux.toFixed(2)}%</td>
+                    <td className="border border-[#0F3D5E] px-4 py-3 font-semibold text-[#1F2937]">{formatAmount(soldeRealise, row.currency)}</td>
+                  </tr>
+                );
+              }
+
+              return (
               <tr key={row.budget.id}>
                 <td className="border border-[#0F3D5E] px-4 py-3 font-semibold text-[#1F2937]">{row.projet}</td>
                 <td className="border border-[#0F3D5E] px-4 py-3 text-[#6B7280]">{row.departement}</td>
@@ -412,7 +505,8 @@ export function BudgetReportsSection() {
                 {outputType === "execution" ? <td className="border border-[#0F3D5E] px-4 py-3">{formatAmount(row.recettesRealisees, row.currency)} / {formatAmount(row.depensesRealisees, row.currency)}</td> : null}
                 {outputType === "ecarts" ? <td className="border border-[#0F3D5E] px-4 py-3">Recettes: {formatAmount(row.recettesRealisees - row.recettesPrevues, row.currency)} / Depenses: {formatAmount(row.depensesRealisees - row.depensesPrevues, row.currency)}</td> : null}
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
         </div>
