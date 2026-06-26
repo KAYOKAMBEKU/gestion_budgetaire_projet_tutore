@@ -30,6 +30,7 @@ import { ComptableBudgetsPage } from "../../comptable/pages/ComptableBudgetsPage
 import { ComptableDashboardPage } from "../../comptable/pages/ComptableDashboardPage";
 import { ComptableMouvementsPage } from "../../comptable/pages/ComptableMouvementsPage";
 import { ComptableRealisationsPage } from "../../comptable/pages/ComptableRealisationsPage";
+import { ComptableReportsPage } from "../../comptable/pages/ComptableReportsPage";
 
 function UserAdministrationSection({ activeTab }: { activeTab: AdminTabId }) {
   if (activeTab === "roles") {
@@ -179,6 +180,7 @@ export function AppRoutes() {
       <Route element={<ComptableBudgetsPage />} path="/comptable/budgets" />
       <Route element={<ComptableBudgetDetailPage />} path="/comptable/budgets/:id" />
       <Route element={<ComptableMouvementsPage />} path="/comptable/mouvements" />
+      <Route element={<ComptableReportsPage />} path="/comptable/rapports" />
       <Route element={<Navigate replace to="/comptable/mouvements" />} path="/comptable/entrees" />
       <Route element={<Navigate replace to="/comptable/mouvements" />} path="/comptable/sorties" />
       <Route element={<ComptableRealisationsPage />} path="/comptable/realisations" />

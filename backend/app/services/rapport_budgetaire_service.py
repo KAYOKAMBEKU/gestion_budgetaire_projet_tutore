@@ -20,6 +20,8 @@ REPORT_OUTPUT_LABELS = {
     "general": "Etat general budgetaire",
     "execution": "Etat d'execution budgetaire",
     "ecarts": "Etat des ecarts",
+    "entrees": "Etat des entrees",
+    "sorties": "Etat des sorties",
     "departements": "Etat par departement",
 }
 
@@ -69,6 +71,7 @@ def _detail_col_widths(headers: list[str]) -> list[float]:
         "Depenses realisees": 1.6,
         "Ecart recettes": 1.5,
         "Ecart depenses": 1.5,
+        "Solde realise": 1.5,
     }
     weights = [weights_by_header.get(header, 1.2) for header in headers]
     total_weight = sum(weights)
@@ -156,8 +159,13 @@ def _build_pdf(title: str, now: str, summary_rows: list[list[str]], detail_heade
         "Taux",
         "Recettes realisees",
         "Depenses realisees",
+        "Entrees prevues",
+        "Entrees realisees",
+        "Sorties prevues",
+        "Sorties realisees",
         "Ecart recettes",
         "Ecart depenses",
+        "Solde realise",
     }
     table_data = [[_paragraph(header, header_style) for header in detail_headers]]
     for row in detail_rows:
@@ -265,6 +273,7 @@ def generate_admin_budget_report_pdf(db: Session, type_rapport: str = "general")
                 [f"Taux execution {devise}", f"{taux:.2f}%"],
                 [f"Recettes prevues / realisees {devise}", f"{_money(totals['recettes_prevues'], devise)} / {_money(totals['recettes_realisees'], devise)}"],
                 [f"Depenses prevues / realisees {devise}", f"{_money(totals['depenses_prevues'], devise)} / {_money(totals['depenses_realisees'], devise)}"],
+                [f"Solde realise {devise}", _money(totals["recettes_realisees"] - totals["depenses_realisees"], devise)],
             ]
         )
 
@@ -292,6 +301,37 @@ def generate_admin_budget_report_pdf(db: Session, type_rapport: str = "general")
                     _money(realise, devise),
                     _money(realise - prevu, devise),
                     f"{taux:.2f}%",
+                ]
+            )
+    elif type_rapport in {"entrees", "sorties"}:
+        if type_rapport == "entrees":
+            detail_headers = ["Projet", "Departement", "Devise", "Exercice", "Statut", "Entrees prevues", "Entrees realisees", "Ecart", "Taux", "Solde realise"]
+        else:
+            detail_headers = ["Projet", "Departement", "Devise", "Exercice", "Statut", "Sorties prevues", "Sorties realisees", "Ecart", "Taux", "Solde realise"]
+
+        detail_rows = []
+        for row in rows:
+            if type_rapport == "entrees":
+                prevu = row["recettes_prevues"]
+                realise = row["recettes_realisees"]
+            else:
+                prevu = row["depenses_prevues"]
+                realise = row["depenses_realisees"]
+            ecart = realise - prevu
+            taux = (realise / prevu * Decimal("100")) if prevu > 0 else Decimal("0")
+            solde_realise = row["recettes_realisees"] - row["depenses_realisees"]
+            detail_rows.append(
+                [
+                    row["projet"],
+                    row["departement"],
+                    row["devise"],
+                    row["exercice"],
+                    row["budget"].statut,
+                    _money(prevu, row["devise"]),
+                    _money(realise, row["devise"]),
+                    _money(ecart, row["devise"]),
+                    f"{taux:.2f}%",
+                    _money(solde_realise, row["devise"]),
                 ]
             )
     else:

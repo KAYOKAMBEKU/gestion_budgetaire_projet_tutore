@@ -5,6 +5,7 @@ const links = [
   { to: "/comptable/dashboard", label: "Tableau de bord", description: "Synthese execution" },
   { to: "/comptable/budgets", label: "Budgets en execution", description: "Budgets approuves" },
   { to: "/comptable/mouvements", label: "Mouvements financiers", description: "Entrees et sorties" },
+  { to: "/comptable/rapports", label: "Rapports", description: "Entrees et sorties" },
   { to: "/comptable/realisations", label: "Realisations budgetaires", description: "Budget realise" },
   { to: "/comptable/analyse-ecarts", label: "Analyse des ecarts", description: "Prevu vs realise" },
 ];

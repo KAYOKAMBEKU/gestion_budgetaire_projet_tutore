@@ -18,9 +18,19 @@ def _is_admin(user: User) -> bool:
     return any((role.nom_role or "").strip().lower() == "administrateur" for role in user.roles)
 
 
-def _require_admin(user: User) -> None:
-    if not _is_admin(user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Seul l'Administrateur peut exporter les rapports budgetaires.")
+def _is_comptable(user: User) -> bool:
+    return any((role.nom_role or "").strip().lower() == "comptable" for role in user.roles)
+
+
+def _require_report_export_access(user: User, type_rapport: str) -> None:
+    if _is_admin(user):
+        return
+    if _is_comptable(user) and type_rapport in {"entrees", "sorties"}:
+        return
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Votre role ne permet pas d'exporter ce rapport budgetaire.",
+    )
 
 
 @router.post("/", response_model=RapportBudgetaireResponse, status_code=status.HTTP_201_CREATED)
@@ -57,7 +67,7 @@ def export_admin_budget_report_pdf(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    _require_admin(current_user)
+    _require_report_export_access(current_user, type_rapport)
     try:
         filename, content = rapport_budgetaire_service.generate_admin_budget_report_pdf(db, type_rapport)
     except ValueError as exc:
