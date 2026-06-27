@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { getApiErrorMessage } from "../../../api/client";
-import { CurrencySelector } from "../../../components/ui/CurrencySelector";
 import { PopupModal } from "../../../components/ui/PopupModal";
 import { useAuth } from "../../../context/AuthContext";
 import type { CurrencyCode } from "../../../context/CurrencyContext";
@@ -217,6 +216,8 @@ function ExistingBudgetLinesTable({
             <thead className="bg-[#F9FAFB] text-left text-xs uppercase tracking-wide text-[#374151]">
               <tr>
                 <th className="px-4 py-3">Libelle</th>
+                <th className="px-4 py-3">Activite</th>
+                <th className="px-4 py-3">Titre budgetaire</th>
                 <th className="px-4 py-3">Type</th>
                 <th className="px-4 py-3">Categorie</th>
                 <th className="px-4 py-3">Montant prevu</th>
@@ -228,7 +229,7 @@ function ExistingBudgetLinesTable({
                 <tr>
                   <td
                     className="px-4 py-8 text-center text-[#6B7280]"
-                    colSpan={5}
+                    colSpan={7}
                   >
                     Chargement des lignes...
                   </td>
@@ -237,7 +238,7 @@ function ExistingBudgetLinesTable({
                 <tr>
                   <td
                     className="px-4 py-8 text-center text-[#6B7280]"
-                    colSpan={5}
+                    colSpan={7}
                   >
                     Aucune ligne trouvee pour ce budget.
                   </td>
@@ -252,6 +253,15 @@ function ExistingBudgetLinesTable({
                       <p className="text-xs text-[#6B7280]">
                         {line.description || "Sans description"}
                       </p>
+                    </td>
+                    <td className="px-4 py-3 text-[#374151]">
+                      {line.activite || "-"}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-[#6B7280]">
+                      <p className="font-semibold text-[#374151]">
+                        {line.grand_titre || "-"}
+                      </p>
+                      <p>{line.sous_titre || ""}</p>
                     </td>
                     <td className="px-4 py-3 capitalize text-[#6B7280]">
                       {line.type_ligne}
@@ -383,14 +393,12 @@ export function CreateProjectBudgetPage() {
   const [selectedProjectId, setSelectedProjectId] = useState<number | "">(
     initialProjectId,
   );
-  const [draftCurrency, setDraftCurrency] = useState<CurrencyCode>("FC");
   const [budgetForm, setBudgetForm] = useState<
     Pick<BudgetCreate, "libelle" | "description">
   >({
     libelle: "",
     description: "",
   });
-  const [plannedBudgetAmount, setPlannedBudgetAmount] = useState("");
   const [budgetDates, setBudgetDates] = useState({
     date_debut: "",
     date_fin: "",
@@ -419,6 +427,8 @@ export function CreateProjectBudgetPage() {
       projectsQuery.data?.find((project) => project.id === selectedProjectId),
     [projectsQuery.data, selectedProjectId],
   );
+  const draftCurrency: CurrencyCode =
+    selectedProject?.devise === "USD" ? "USD" : "FC";
   const effectiveBudgetDates = {
     date_debut:
       budgetDates.date_debut || selectedProject?.date_debut_prevue || "",
@@ -475,7 +485,7 @@ export function CreateProjectBudgetPage() {
   const draftBudgetPrevisionnel = lines
     .filter((line) => line.type_ligne === "depense")
     .reduce((sum, line) => sum + Number(line.montant_prevu || 0), 0);
-  const plannedBudgetValue = Number(plannedBudgetAmount || 0);
+  const plannedBudgetValue = Number(selectedProject?.cout_estime || 0);
   const budgetLineDifference = plannedBudgetValue - draftBudgetPrevisionnel;
   const linesMatchPlannedBudget =
     plannedBudgetValue > 0 && Math.abs(budgetLineDifference) < 0.01;
@@ -502,13 +512,11 @@ export function CreateProjectBudgetPage() {
 
     setSelectedProjectId(projectId ?? "");
     setBudgetForm({ libelle: "", description: "" });
-    setPlannedBudgetAmount("");
     setBudgetDates({
       date_debut: project?.date_debut_prevue ?? "",
       date_fin: project?.date_fin_prevue ?? "",
     });
     setLines([]);
-    setDraftCurrency("FC");
     setBudgetInfoSubmitted(false);
     setBudgetModalOpen(true);
   }
@@ -670,10 +678,8 @@ export function CreateProjectBudgetPage() {
   function resetBudgetDraft() {
     setLines([]);
     setBudgetForm({ libelle: "", description: "" });
-    setPlannedBudgetAmount("");
     setBudgetDates({ date_debut: "", date_fin: "" });
     setSelectedProjectId("");
-    setDraftCurrency("FC");
     setBudgetInfoSubmitted(false);
   }
 
@@ -791,8 +797,6 @@ export function CreateProjectBudgetPage() {
       {
         libelle: budgetForm.libelle,
         description: budgetForm.description || undefined,
-        devise: draftCurrency,
-        montant_total_prevu: plannedBudgetValue,
         projet_id: selectedProjectId as number,
         lignes: lines,
       },
@@ -825,8 +829,6 @@ export function CreateProjectBudgetPage() {
       {
         libelle: budgetForm.libelle,
         description: budgetForm.description || undefined,
-        devise: draftCurrency,
-        montant_total_prevu: plannedBudgetValue,
         projet_id: selectedProjectId as number,
         lignes: lines,
       },
@@ -971,6 +973,9 @@ export function CreateProjectBudgetPage() {
                 categorie_id: line.categorie_id,
                 categorie_nom: line.categorie?.nom ?? String(line.categorie_id),
                 description: line.description ?? undefined,
+                activite: line.activite ?? undefined,
+                grand_titre: line.grand_titre ?? undefined,
+                sous_titre: line.sous_titre ?? undefined,
                 libelle: line.libelle,
                 montant_prevu: Number(line.montant_prevu ?? 0),
                 type_ligne: line.type_ligne,
@@ -987,11 +992,6 @@ export function CreateProjectBudgetPage() {
         onClose={() => setBudgetModalOpen(false)}
       >
         <div className="grid gap-4">
-          <CurrencySelector
-            value={draftCurrency}
-            variant="modal"
-            onChange={setDraftCurrency}
-          />
           <section className="grid gap-4 border border-[#E5E7EB] bg-white p-5 text-left md:grid-cols-2">
             <div>
               <label
@@ -1147,21 +1147,14 @@ export function CreateProjectBudgetPage() {
           />
 
           <section className="grid gap-4 border border-[#E5E7EB] bg-white p-5 text-left md:grid-cols-2">
-            <label className="text-sm font-medium text-[#374151]">
-              Cout previsionnel *
-              <input
-                className="input-field"
-                min={0}
-                required
-                step="0.01"
-                type="number"
-                value={plannedBudgetAmount}
-                onChange={(event) => {
-                  setBudgetInfoSubmitted(false);
-                  setPlannedBudgetAmount(event.target.value);
-                }}
-              />
-            </label>
+            <div className="rounded-md bg-[#F9FAFB] px-3 py-2 text-sm text-[#6B7280]">
+              <p className="text-xs font-semibold uppercase tracking-wide">
+                Cout previsionnel du projet
+              </p>
+              <p className="mt-1 text-lg font-bold text-[#1F2937]">
+                {formatAmount(plannedBudgetValue, draftCurrency)}
+              </p>
+            </div>
             <div className="rounded-md bg-[#F9FAFB] px-3 py-2 text-sm text-[#6B7280]">
               <p className="text-xs font-semibold uppercase tracking-wide">
                 Total des depenses

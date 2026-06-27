@@ -7,6 +7,7 @@ import { ValidateProjectModal } from "../components/ValidateProjectModal";
 import { RejectProjectModal } from "../components/RejectProjectModal";
 import { useProject, useValidateProject, useRejectProject } from "../hooks/useManagerProjects";
 import { formatDate } from "../../../utils/formatDate";
+import { formatAmount } from "../utils/formatAmount";
 
 function AccessMessage({ title, message }: { title: string; message: string }) {
   return (
@@ -133,7 +134,7 @@ export function ManagerProjectDetailPage({ readOnly = false }: { readOnly?: bool
               <div>
                 <h3 className="text-sm font-semibold uppercase tracking-wide text-[#6B7280]">Coût estimé</h3>
                 <p className="mt-2 text-2xl font-bold text-[#1F2937]">
-                  {project.cout_estime.toLocaleString("fr-FR")} €
+                  {formatAmount(project.cout_estime, project.devise === "USD" ? "USD" : "FC")}
                 </p>
               </div>
 
@@ -141,7 +142,7 @@ export function ManagerProjectDetailPage({ readOnly = false }: { readOnly?: bool
                 <div>
                   <h3 className="text-sm font-semibold uppercase tracking-wide text-[#6B7280]">Budget réalisé</h3>
                   <p className="mt-2 text-2xl font-bold text-[#1F2937]">
-                    {project.budget_realise_total.toLocaleString("fr-FR")} €
+                    {formatAmount(project.budget_realise_total, project.devise === "USD" ? "USD" : "FC")}
                   </p>
                 </div>
               )}

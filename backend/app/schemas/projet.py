@@ -20,6 +20,7 @@ class ProjetBase(BaseModel):
     date_debut_prevue: Optional[date] = None
     date_fin_prevue: Optional[date] = None
     cout_estime: Optional[Decimal] = Field(None, ge=0)
+    devise: str = Field("FC", pattern="^(FC|USD)$", max_length=3)
     budget_realise_total: Optional[Decimal] = Field(None, ge=0)
     model_config = ConfigDict(extra="forbid")
 
@@ -40,6 +41,7 @@ class ProjetUpdate(BaseModel):
     date_debut_prevue: Optional[date] = None
     date_fin_prevue: Optional[date] = None
     cout_estime: Optional[Decimal] = Field(None, ge=0)
+    devise: Optional[str] = Field(None, pattern="^(FC|USD)$", max_length=3)
     budget_realise_total: Optional[Decimal] = Field(None, ge=0)
     exercice_id: Optional[int] = None
     model_config = ConfigDict(extra="forbid")

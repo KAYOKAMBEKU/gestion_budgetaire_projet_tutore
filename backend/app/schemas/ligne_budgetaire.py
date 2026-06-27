@@ -17,6 +17,9 @@ class LigneBudgetaireBase(BaseModel):
     ecart_montant: Optional[Decimal] = None
     ecart_pourcentage: Optional[Decimal] = None
     type_ligne: LigneType
+    activite: Optional[str] = Field(None, max_length=150)
+    grand_titre: Optional[str] = Field(None, max_length=150)
+    sous_titre: Optional[str] = Field(None, max_length=150)
     budget_id: int
     categorie_id: int
 
@@ -35,6 +38,9 @@ class LigneBudgetaireUpdate(BaseModel):
     ecart_montant: Optional[Decimal] = None
     ecart_pourcentage: Optional[Decimal] = None
     type_ligne: Optional[LigneType] = None
+    activite: Optional[str] = Field(None, max_length=150)
+    grand_titre: Optional[str] = Field(None, max_length=150)
+    sous_titre: Optional[str] = Field(None, max_length=150)
     budget_id: Optional[int] = None
     categorie_id: Optional[int] = None
 

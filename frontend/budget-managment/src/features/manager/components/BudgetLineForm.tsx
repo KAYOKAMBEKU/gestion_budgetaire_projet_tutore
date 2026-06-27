@@ -11,6 +11,9 @@ interface BudgetLineFormProps {
 export function BudgetLineForm({ categories, onAdd, onError }: BudgetLineFormProps) {
   const [typeLigne, setTypeLigne] = useState<TypeLigneBudgetaire>("depense");
   const [categorieId, setCategorieId] = useState("");
+  const [activite, setActivite] = useState("");
+  const [grandTitre, setGrandTitre] = useState("");
+  const [sousTitre, setSousTitre] = useState("");
   const [libelle, setLibelle] = useState("");
   const [description, setDescription] = useState("");
   const [quantite, setQuantite] = useState("");
@@ -39,14 +42,17 @@ export function BudgetLineForm({ categories, onAdd, onError }: BudgetLineFormPro
     const amount = Number(montantPrevu);
     const category = categories.find((item) => item.id === Number(categorieId));
 
-    if (!libelle.trim() || !category || Number.isNaN(amount) || amount < 0) {
-      onError?.("Veuillez renseigner un libelle, une categorie et un montant prevu valide.");
+    if (!activite.trim() || !grandTitre.trim() || !sousTitre.trim() || !libelle.trim() || !category || Number.isNaN(amount) || amount < 0) {
+      onError?.("Veuillez renseigner l'activite, le grand titre, le sous-titre, le libelle, la categorie et un montant prevu valide.");
       return;
     }
 
     onAdd({
       libelle,
       description: description || undefined,
+      activite,
+      grand_titre: grandTitre,
+      sous_titre: sousTitre,
       quantite: quantite ? Number(quantite) : undefined,
       cout_unitaire: coutUnitaire ? Number(coutUnitaire) : undefined,
       periode: periode || undefined,
@@ -55,6 +61,9 @@ export function BudgetLineForm({ categories, onAdd, onError }: BudgetLineFormPro
       categorie_nom: category.nom,
       montant_prevu: amount,
     });
+    setActivite("");
+    setGrandTitre("");
+    setSousTitre("");
     setLibelle("");
     setDescription("");
     setQuantite("");
@@ -66,7 +75,7 @@ export function BudgetLineForm({ categories, onAdd, onError }: BudgetLineFormPro
 
   return (
     <form className="rounded-lg border border-[#E5E7EB] bg-white p-5 text-left shadow-sm" onSubmit={handleSubmit}>
-      <h2 className="text-lg font-bold text-[#1F2937]">Ajouter une ligne budgetaire</h2>
+      <h2 className="text-lg font-bold text-[#1F2937]">Ajouter une activite budgetisee</h2>
       <div className="mt-4 grid gap-4 md:grid-cols-3">
         <label className="text-sm font-medium text-[#374151]">
           Type *
@@ -89,6 +98,20 @@ export function BudgetLineForm({ categories, onAdd, onError }: BudgetLineFormPro
         <label className="text-sm font-medium text-[#374151]">
           Montant prevu *
           <input className="input-field disabled:bg-[#F3F4F6] disabled:text-[#6B7280]" disabled min={0} step="0.01" type="number" value={montantPrevu} />
+        </label>
+      </div>
+      <div className="mt-4 grid gap-4 md:grid-cols-3">
+        <label className="text-sm font-medium text-[#374151]">
+          Activite *
+          <input className="input-field" placeholder="Ex: Developpement du logiciel" required value={activite} onChange={(event) => setActivite(event.target.value)} />
+        </label>
+        <label className="text-sm font-medium text-[#374151]">
+          Grand titre *
+          <input className="input-field" placeholder="Ex: Entrees, Personnel, Materiel" required value={grandTitre} onChange={(event) => setGrandTitre(event.target.value)} />
+        </label>
+        <label className="text-sm font-medium text-[#374151]">
+          Sous-titre *
+          <input className="input-field" placeholder="Ex: Banque mondiale, Salaires, Carburant" required value={sousTitre} onChange={(event) => setSousTitre(event.target.value)} />
         </label>
       </div>
       <div className="mt-4 grid gap-4 md:grid-cols-3">

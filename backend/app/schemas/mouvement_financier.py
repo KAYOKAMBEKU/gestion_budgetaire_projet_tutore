@@ -90,6 +90,9 @@ class LigneExecutionBudgetaire(BaseModel):
     ligne_budgetaire_id: int
     libelle: str
     type_ligne: str
+    activite: Optional[str] = None
+    grand_titre: Optional[str] = None
+    sous_titre: Optional[str] = None
     montant_prevu: Decimal
     montant_realise: Decimal
     ecart_montant: Decimal

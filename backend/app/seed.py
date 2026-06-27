@@ -44,8 +44,11 @@ PERMISSIONS = [
 
 CATEGORIES = [
     ("Subventions", "recette", "Subventions et dotations recues"),
+    ("Financements externes", "recette", "Financements de bailleurs, banques et partenaires"),
     ("Recettes propres", "recette", "Recettes generees par le departement"),
     ("Fonctionnement", "depense", "Depenses de fonctionnement courant"),
+    ("Personnel", "depense", "Salaires, primes et paiements du personnel"),
+    ("Transport et carburant", "depense", "Carburant, transport et mobilite du projet"),
     ("Investissement", "depense", "Depenses d'investissement"),
 ]
 

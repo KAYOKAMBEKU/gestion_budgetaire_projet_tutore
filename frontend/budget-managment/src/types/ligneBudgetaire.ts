@@ -11,6 +11,9 @@ export interface LigneBudgetaire {
   ecart_montant: number;
   ecart_pourcentage: number;
   type_ligne: TypeLigneBudgetaire;
+  activite?: string | null;
+  grand_titre?: string | null;
+  sous_titre?: string | null;
   budget_id: number;
   categorie_id: number;
   categorie?: CategorieBudgetaire | null;
@@ -21,6 +24,9 @@ export interface LigneBudgetaireCreate {
   description?: string;
   montant_prevu: number;
   type_ligne: TypeLigneBudgetaire;
+  activite?: string;
+  grand_titre?: string;
+  sous_titre?: string;
   budget_id: number;
   categorie_id: number;
 }
@@ -33,6 +39,9 @@ export interface DraftBudgetLine {
   periode?: string;
   montant_prevu: number;
   type_ligne: TypeLigneBudgetaire;
+  activite?: string;
+  grand_titre?: string;
+  sous_titre?: string;
   categorie_id: number;
   categorie_nom: string;
 }
